@@ -72,7 +72,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .subj .ic{font-size:clamp(40px,8vw,66px);line-height:1;filter:drop-shadow(0 4px 6px rgba(0,0,0,.15))}
 .subj .nm{font-size:clamp(19px,3.4vw,28px);font-weight:700;text-shadow:0 2px 6px rgba(0,0,0,.18)}
 .subj .lv{font-size:clamp(12px,2vw,15px);background:rgba(255,255,255,.28);padding:2px 10px;border-radius:999px;font-weight:600}
-.subj:nth-child(2){animation-delay:-.7s}.subj:nth-child(3){animation-delay:-1.4s}.subj:nth-child(4){animation-delay:-2.1s}.subj:nth-child(5){animation-delay:-2.8s}.subj:nth-child(6){animation-delay:-3.5s}.subj:nth-child(7){animation-delay:-4.2s}.subj:nth-child(8){animation-delay:-4.9s}.subj:nth-child(9){animation-delay:-5.6s}
+.subj:nth-child(2){animation-delay:-.7s}.subj:nth-child(3){animation-delay:-1.4s}.subj:nth-child(4){animation-delay:-2.1s}.subj:nth-child(5){animation-delay:-2.8s}.subj:nth-child(6){animation-delay:-3.5s}.subj:nth-child(7){animation-delay:-4.2s}.subj:nth-child(8){animation-delay:-4.9s}.subj:nth-child(9){animation-delay:-5.6s}.subj:nth-child(10){animation-delay:-6.3s}
 
 /* quiz */
 .qtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -175,6 +175,11 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .bank.words .ch{width:auto;aspect-ratio:auto;border-radius:999px;padding:12px 22px;font-size:clamp(22px,4vw,30px)}
 .bank .ch.used{visibility:hidden}
 
+/* writing: tracing pad */
+.tracebox{position:relative;width:100%;max-width:600px;margin:14px auto 0;border-radius:22px;background:#fbf9ff;box-shadow:inset 0 0 0 3px #eee6ff;overflow:hidden}
+.tracebox canvas{position:absolute;inset:0;width:100%;height:100%}
+.tracebox .ink{touch-action:none;cursor:crosshair}
+
 /* memory */
 .mpick{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
 .mpick .ch{width:clamp(110px,24vw,150px);font-size:clamp(20px,3.6vw,26px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
@@ -264,7 +269,7 @@ function numChoices(ans, spread = 3, n = 3, min = 0) {
 
 /* ---------- saved progress (this browser only) ---------- */
 const KEY = 'rielle-bubble-learn';
-let P = { stars: 0, levels: { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, pattern: 1 }, sound: true, voice: true };
+let P = { stars: 0, levels: { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, writing: 1, pattern: 1 }, sound: true, voice: true };
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) P = Object.assign(P, s, { levels: Object.assign(P.levels, s.levels || {}) }); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }
 
@@ -350,6 +355,7 @@ const SUBJ = {
   sight:   { name: 'Sight Words', ic: '👀', c1: '#ff9fa8', c2: '#ff5d73', sh: 'rgba(255,93,115,.4)' },
   reading: { name: 'Reading', ic: '📚', c1: '#7ee8e0', c2: '#14b8a6', sh: 'rgba(20,184,166,.4)' },
   dictation: { name: 'Dictation', ic: '✍️', c1: '#b4bcff', c2: '#6366f1', sh: 'rgba(99,102,241,.4)' },
+  writing: { name: 'Writing', ic: '🖍️', c1: '#c6f27a', c2: '#6fb81c', sh: 'rgba(111,184,28,.4)' },
   pattern: { name: 'Patterns', ic: '🧩', c1: '#ffc58f', c2: '#ff8a3d', sh: 'rgba(255,138,61,.4)' },
   memory:  { name: 'Memory',   ic: '🧠', c1: '#7fd6ff', c2: '#2f9bff', sh: 'rgba(47,155,255,.4)' },
   stickers:{ name: 'Stickers', ic: '🎁', c1: '#ffe07a', c2: '#ffb21e', sh: 'rgba(255,178,30,.45)' },
@@ -682,6 +688,22 @@ function genDictation(L) {
   return { ...buildQ([...w], extraLetters(w, L === 1 ? 1 : 2)), visual: `<div class="big">${L === 1 ? e : '👂'}</div>`, text: 'Listen, then spell the word! 🔊', small: true, say: `Spell the word: ${w}.` };
 }
 
+/* ---------- WRITING ---------- */
+// Trace a letter, number or word with a finger. Trace questions return { trace } instead of choices;
+// the tracing pad is set up by setupTrace() and scored by checkTrace().
+function genWriting(L) {
+  if (L === 1) {
+    const c = pick('abcdefghijklmnopqrstuvwxyz'.split(''));
+    return { trace: c, text: 'Trace the letter with your finger!', small: true, say: `Trace the lowercase letter ${c.toUpperCase()}.`, choices: [], answer: c };
+  }
+  if (L === 2) {
+    const c = pick('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), num = /\d/.test(c);
+    return { trace: c, text: `Trace the ${num ? 'number' : 'letter'} with your finger!`, small: true, say: num ? `Trace the number ${c}.` : `Trace the capital letter ${c}.`, choices: [], answer: c };
+  }
+  const w = rnd(6) ? pick([...SP[0].map(x => x[0]), ...SIGHT[0].filter(x => x.length >= 3 && x.length <= 4)]) : 'Rielle';
+  return { trace: w, text: 'Trace the word with your finger!', small: true, say: w === 'Rielle' ? 'Trace your name, Rielle!' : `Trace the word: ${w}.`, choices: [], answer: w };
+}
+
 /* ---------- PATTERNS ---------- */
 const PE = [['🔴', '🔵', '🟡', '🟢'], ['🍎', '🍌', '🍇', '🍓'], ['🐶', '🐱', '🐰', '🐻'], ['⭐', '🌙', '☀️', '🌈'], ['🟥', '🟦', '🟨', '🟩'], ['🦋', '🐞', '🐝', '🐌']];
 function genPattern(L) {
@@ -701,7 +723,7 @@ function genPattern(L) {
   return { visual: `<div class="seq">${seq.join('')}<span class="q">?</span></div>`, text: 'What comes next?', small: true, say: 'Look at the pattern. What comes next?',
     choices: uniq(ans, () => pick(set), 3), answer: ans, emo: true };
 }
-const GEN = { math: genMath, words: genWords, spell: genSpell, sight: genSight, reading: genReading, dictation: genDictation, pattern: genPattern };
+const GEN = { math: genMath, words: genWords, spell: genSpell, sight: genSight, reading: genReading, dictation: genDictation, writing: genWriting, pattern: genPattern };
 
 /* ---------- screens ---------- */
 const app = $('#app');
@@ -761,7 +783,7 @@ function next() {
 function speakQ() { if (Q && Q.cur) speak(Q.cur.say); }
 function renderQuiz(msg) {
   const s = SUBJ[Q.subj], c = Q.cur, tp = topicOf(Q.subj, Q.topic);
-  msg = msg || (c.build ? 'Tap the tiles in the right order!' : "Let's go! Pop the right bubble.");
+  msg = msg || (c.build ? 'Tap the tiles in the right order!' : c.trace ? 'Trace it, then tap Done!' : "Let's go! Pop the right bubble.");
   const words = c.build && c.words;
   const dots = Array.from({ length: Q.total }, (_, i) => `<div class="dot ${Q.results[i] === 1 ? 'on' : Q.results[i] === 0 ? 'ok' : ''} ${i === Q.idx ? 'cur' : ''}"></div>`).join('');
   const wide = c.choices.some(x => x.length > 6);
@@ -774,10 +796,68 @@ function renderQuiz(msg) {
       <div class="helper"><div id="mascot">${bubbo()}</div><div class="say" id="msg">${msg}</div></div>
       <div class="qcard ${c.blocks && Q.blocks ? 'showblocks' : ''}"><button class="speak" data-act="say" aria-label="Read aloud">🔊</button>${c.blocks ? '<button class="blocksbtn" data-act="blocks" aria-label="Counting blocks">🧱</button>' : ''}
         <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div>${c.blocks ? blocksHtml(c.blocks) : ''}
-        ${c.build ? `<div class="slots ${words ? 'words' : ''}">${c.units.map((_, i) => `<button class="slot" data-slot="${i}" aria-label="space ${i + 1}"></button>`).join('')}</div>` : ''}</div>
+        ${c.build ? `<div class="slots ${words ? 'words' : ''}">${c.units.map((_, i) => `<button class="slot" data-slot="${i}" aria-label="space ${i + 1}"></button>`).join('')}</div>` : ''}
+        ${c.trace ? '<div class="tracebox"><canvas class="guide"></canvas><canvas class="ink"></canvas></div>' : ''}</div>
       ${c.build ? `<div class="bank ${words ? 'words' : ''}">${c.pool.map((x, i) => `<button class="ch" data-tile="${i}">${x}</button>`).join('')}</div>`
+        : c.trace ? '<div class="btnrow"><button class="btn pink" data-act="trace-clear">🧽 Clear</button><button class="btn" data-act="trace-done">✓ Done</button></div>'
         : `<div class="choices ${wide ? 'wide' : ''} ${c.emo ? 'emo' : ''}">${c.choices.map((x, i) => `<button class="ch" data-i="${i}">${x}</button>`).join('')}</div>`}
     </div>`;
+  if (c.trace) setupTrace();
+}
+// writing: a grey letter on handwriting lines (.guide) and her finger strokes on top (.ink)
+const TRACE_FONT = s => `700 ${s}px Fredoka, system-ui, sans-serif`;
+let TR = null;
+function setupTrace() {
+  const box = $('.tracebox'), guide = box.querySelector('.guide'), ink = box.querySelector('.ink'), t = Q.cur.trace;
+  const w = box.clientWidth, h = Math.round(Math.min(w * (t.length > 2 ? .5 : .75), 300)), dpr = window.devicePixelRatio || 1;
+  box.style.height = h + 'px';
+  [guide, ink].forEach(cv => { cv.width = w * dpr; cv.height = h * dpr; cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); });
+  const tr = TR = { strokes: [], w, h, ink: ink.getContext('2d'), color: '#ff5f9e' };
+  const layout = () => {
+    if (TR !== tr) return;
+    const m = document.createElement('canvas').getContext('2d');
+    let fs = h * (t.length > 2 ? .7 : .85); m.font = TRACE_FONT(fs);
+    const tw = m.measureText(t).width; if (tw > w * .86) { fs *= w * .86 / tw; m.font = TRACE_FONT(fs); }
+    Object.assign(tr, { fs, lw: Math.max(10, fs * .13), x: (w - m.measureText(t).width) / 2, base: h / 2 + fs * .25,
+      cap: m.measureText('H').actualBoundingBoxAscent, xh: m.measureText('x').actualBoundingBoxAscent });
+    const g = guide.getContext('2d'); g.clearRect(0, 0, w, h);
+    const line = (y, dash) => { g.beginPath(); g.setLineDash(dash ? [10, 8] : []); g.moveTo(10, y); g.lineTo(w - 10, y); g.strokeStyle = '#d9cff7'; g.lineWidth = 2; g.stroke(); };
+    line(tr.base - tr.cap); line(tr.base - tr.xh, true); line(tr.base);
+    g.font = TRACE_FONT(fs); g.fillStyle = '#ece6ff'; g.fillText(t, tr.x, tr.base);
+    g.setLineDash([5, 5]); g.strokeStyle = '#b49bff'; g.lineWidth = 2; g.strokeText(t, tr.x, tr.base);
+  };
+  layout();
+  if (document.fonts) document.fonts.load(TRACE_FONT(100)).then(layout, () => {});
+  const pos = e => { const r = ink.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  ink.onpointerdown = e => { if (Q.lock) return; ink.setPointerCapture(e.pointerId); tr.down = true; tr.strokes.push([pos(e)]); paintInk(); };
+  ink.onpointermove = e => { const s = tr.strokes[tr.strokes.length - 1]; if (!tr.down || !s || TR !== tr) return; s.push(pos(e)); paintInk(); };
+  ink.onpointerup = ink.onpointercancel = () => { tr.down = false; };
+}
+function strokeAll(x, lw) {
+  x.lineCap = x.lineJoin = 'round'; x.lineWidth = lw;
+  for (const s of TR.strokes) { x.beginPath(); x.moveTo(...s[0]); s.forEach(p => x.lineTo(...p)); if (s.length === 1) x.lineTo(s[0][0] + .1, s[0][1]); x.stroke(); }
+}
+function paintInk() { const x = TR.ink; x.clearRect(0, 0, TR.w, TR.h); x.strokeStyle = TR.color; strokeAll(x, TR.lw); }
+// how much of the letter she covered, and how much of her drawing stayed on the letter (checked on a 4px grid)
+function traceScore() {
+  const C = 4, gw = Math.ceil(TR.w / C), gh = Math.ceil(TR.h / C);
+  const cells = paint => {
+    const cv = document.createElement('canvas'); cv.width = gw; cv.height = gh; const x = cv.getContext('2d'); x.scale(1 / C, 1 / C); paint(x);
+    const d = x.getImageData(0, 0, gw, gh).data, s = new Uint8Array(gw * gh); for (let i = 0; i < s.length; i++) s[i] = d[i * 4 + 3] > 100 ? 1 : 0; return s;
+  };
+  const G = cells(x => { x.font = TRACE_FONT(TR.fs); x.fillText(Q.cur.trace, TR.x, TR.base); }), I = cells(x => strokeAll(x, TR.lw));
+  const near = (S, i, r) => { const cx = i % gw, cy = (i / gw) | 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = cx + dx, Y = cy + dy; if (X >= 0 && Y >= 0 && X < gw && Y < gh && S[Y * gw + X]) return true; } return false; };
+  let g = 0, gc = 0, n = 0, nc = 0;
+  for (let i = 0; i < G.length; i++) { if (G[i]) { g++; if (near(I, i, 2)) gc++; } if (I[i]) { n++; if (near(G, i, 3)) nc++; } }
+  return { cover: g ? gc / g : 0, onLine: n ? nc / n : 0 };
+}
+function checkTrace() {
+  if (Q.lock) return;
+  if (!TR.strokes.length) { const m = 'Use your finger to trace the gray letters!'; setMsg(m); return speak(m); }
+  const { cover, onLine } = traceScore();
+  if (cover >= .6 && onLine >= .75) { TR.color = '#22be8c'; paintInk(); return gotIt($('.tracebox')); }
+  Q.lock = true; missed(cover < .6 ? 'Keep going! Trace all of it.' : 'Stay on the gray lines. Try again!');
+  later(() => { TR.strokes = []; paintInk(); Q.lock = false; }, 900);
 }
 function setMsg(t, oops) {
   const m = $('#msg'); if (m) m.textContent = t;
@@ -826,10 +906,10 @@ function gotIt(el) {
   const p = pick(PRAISE); setMsg(p); speak(p);
   Q.idx++; later(next, 1500);
 }
-function missed() {
+function missed(msg) {
   sfx('wrong'); Q.first = false; Q.streak = 0; Q.miss++;
   if (Q.miss >= 3 && P.levels[Q.subj] > 1) { P.levels[Q.subj]--; Q.miss = 0; save(); }
-  const o = pick(OOPS); setMsg(o, true); speak(o);
+  const o = msg || pick(OOPS); setMsg(o, true); speak(o);
 }
 function finishQuiz() {
   const good = Q.results.filter(x => x === 1).length;
@@ -943,6 +1023,7 @@ function settings() {
     <div class="row">👀 Sight words level ${seg('sight')}</div>
     <div class="row">📚 Reading level ${seg('reading')}</div>
     <div class="row">✍️ Dictation level ${seg('dictation')}</div>
+    <div class="row">🖍️ Writing level ${seg('writing')}</div>
     <div class="row">🧩 Patterns level ${seg('pattern')}</div>
     <p class="small-note">Levels move up by themselves after 4 first-try answers in a row, and ease down after a few misses. Progress is saved in this browser only.</p>
     <div class="btnrow"><button class="btn pink" data-act="reset">Reset stars</button><button class="btn" data-act="close">Done</button></div>
@@ -977,6 +1058,8 @@ document.addEventListener('click', e => {
   switch (d.act) {
     case 'home': Q = null; M = null; return home();
     case 'say': return speak(Q.cur.say, true);
+    case 'trace-clear': if (!Q.lock) { TR.strokes = []; paintInk(); } return;
+    case 'trace-done': return checkTrace();
     case 'blocks': Q.blocks = t.closest('.qcard').classList.toggle('showblocks'); if (Q.blocks) speak(BLOCK_HINT[Q.cur.blocks.mode]); return;
     case 'hello': return speak(`${greeting()}, Rielle! I'm Bubbo. Pop a bubble and let's learn together!`, true);
     case 'again': beforeStars = P.stars; return doneAgain && doneAgain();
@@ -985,7 +1068,7 @@ document.addEventListener('click', e => {
     case 'close': closeSettings(); if (!Q && !M) home(); return;
     case 'reset':
       if (!resetArmed) { resetArmed = true; t.textContent = 'Tap again to confirm'; return; }
-      P.stars = 0; P.levels = { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, pattern: 1 }; save(); closeSettings(); Q = null; M = null; home(); return;
+      P.stars = 0; P.levels = { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, writing: 1, pattern: 1 }; save(); closeSettings(); Q = null; M = null; home(); return;
   }
 });
 
