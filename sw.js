@@ -1,6 +1,6 @@
 /* Offline support: serve the app from cache when there is no network.
    Pages are fetched network-first so updates show up right away. */
-const CACHE = 'bubble-learn-v1';
+const CACHE = 'bubble-learn-v2';
 const CORE = ['./', 'index.html', 'manifest.webmanifest', 'assets/icon.svg', 'assets/icon-192.png', 'assets/icon-512.png', 'assets/icon-1024.png', 'assets/play-store-512.png'];
 
 self.addEventListener('install', e => {
