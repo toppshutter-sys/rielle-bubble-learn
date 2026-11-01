@@ -12,9 +12,10 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 - `P`: saved progress (stars, per-subject levels, sound and voice toggles), stored in localStorage under `rielle-bubble-learn`.
 - `sfx()` / `tone()`: sound effects, made with the Web Audio API (no audio files).
 - `speak()`: reads text aloud with the browser's built-in speech synthesis.
-- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genSight` (uses the `SIGHT` word lists and the `SFILL` sentences), `genPattern`. Each one takes a level (1–3) and returns `{ text, say, visual?, choices[], answer, small?, emo? }`. `answer` must be one of `choices`, and choices must be unique strings.
+- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genSight` (uses the `SIGHT` word lists and the `SFILL` sentences), `genPattern`. Each one takes a level (1–3), and Math and Grammar also take an optional list of question types to stick to. Each returns `{ text, say, visual?, choices[], answer, small?, emo? }`. `answer` must be one of `choices`, and choices must be unique strings.
 - `GEN` maps each subject key to its generator.
-- Screens: `home()`, `startQuiz()` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
+- `TOPICS` lists the practice topics for Math and Grammar. Tapping either subject opens `topicPick()`; each topic's `t` is the list of question types it uses (the `T` names inside `genMath` / the `G` keys for grammar), plus a "Mix it up" choice.
+- Screens: `home()`, `topicPick()`, `startQuiz(subj, topic?)` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
 - All clicks go through one delegated `document` click handler that reads `data-*` attributes.
 
 ## Adding a subject

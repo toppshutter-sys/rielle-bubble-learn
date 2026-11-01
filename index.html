@@ -148,6 +148,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .mpick{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
 .mpick .ch{width:clamp(110px,24vw,150px);font-size:clamp(20px,3.6vw,26px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
 .mpick .ch b{font-size:1.8em}
+.mpick.topics{max-width:720px;margin-left:auto;margin-right:auto}
+.mpick.topics .ch{font-size:clamp(17px,3vw,22px);line-height:1.15;text-align:center;padding:10px}
 .mgrid{display:grid;gap:clamp(8px,2vw,16px);margin:18px auto 0;width:100%;max-width:640px}
 .card{aspect-ratio:1;border:none;background:none;perspective:700px;padding:0}
 .card .in{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.3,1.4,.5,1);transform-style:preserve-3d}
@@ -320,11 +322,31 @@ const SUBJ = {
 const STICKERS = ['🦄', '🐬', '🌈', '🦋', '🐼', '🍦', '🚀', '🐙', '🌻', '🦁', '🧁', '👑', '🐳', '🍉', '🪐', '🦩'];
 const PER_STICKER = 10;
 
+/* ---------- topics: practice one kind of question at a time ---------- */
+const TOPICS = {
+  math: [
+    { k: 'count', name: 'Counting', ic: '🍎', t: ['count'] },
+    { k: 'add', name: 'Adding', ic: '➕', t: ['add', 'missing', 'double', 'tens'] },
+    { k: 'sub', name: 'Take away', ic: '➖', t: ['sub'] },
+    { k: 'compare', name: 'Bigger or smaller', ic: '⚖️', t: ['compare'] },
+  ],
+  words: [
+    { k: 'rhyme', name: 'Rhymes', ic: '🎵', t: ['rhyme'] },
+    { k: 'opposite', name: 'Opposites', ic: '🔄', t: ['opposite'] },
+    { k: 'kinds', name: 'Kinds of words', ic: '🏷️', t: ['action', 'describe'] },
+    { k: 'sentence', name: 'Sentences', ic: '✏️', t: ['sentence', 'punct'] },
+    { k: 'fit', name: 'Right word', ic: '✅', t: ['plural', 'isare', 'waswere', 'aan'] },
+  ],
+};
+const topicOf = (subj, k) => (TOPICS[subj] || []).find(t => t.k === k);
+// keep only the question types in this topic; if the level has none of them, use the whole topic
+function onlyTypes(T, only) { if (!only) return T; const f = T.filter(x => only.includes(x)); return f.length ? f : only; }
+
 /* ---------- MATH ---------- */
 const ITEMS = [['🍎', 'apples'], ['🐟', 'fish'], ['⭐', 'stars'], ['🌸', 'flowers'], ['🐞', 'ladybugs'], ['🍓', 'strawberries'], ['🎈', 'balloons'], ['🐥', 'chicks'], ['🍪', 'cookies'], ['🦋', 'butterflies'], ['🍩', 'donuts'], ['🐢', 'turtles']];
 const em = (e, n, cls = '') => Array.from({ length: n }, (_, i) => `<span class="e ${cls}" style="animation-delay:${i * 40}ms">${e}</span>`).join('');
-function genMath(L) {
-  const T = L === 1 ? ['count', 'add', 'add', 'sub', 'compare'] : L === 2 ? ['add', 'sub', 'missing', 'compare', 'count', 'double'] : ['add', 'sub', 'missing', 'tens', 'double', 'compare'];
+function genMath(L, only) {
+  const T = onlyTypes(L === 1 ? ['count', 'add', 'add', 'sub', 'compare'] : L === 2 ? ['add', 'sub', 'missing', 'compare', 'count', 'double'] : ['add', 'sub', 'missing', 'tens', 'double', 'compare'], only);
   const t = pick(T), [e, name] = pick(ITEMS);
   if (t === 'count') {
     const n = L === 1 ? 2 + rnd(9) : 9 + rnd(12);
@@ -400,8 +422,8 @@ const G = {
   aan() { const [w, a, e] = pick(AAN); return { visual: `<div class="big">${e}</div>`, text: `<span class="blank">?</span> ${w}`, say: `Do we say a ${w}, or an ${w}?`, choices: ['a', 'an'], answer: a }; },
   describe() { const a = pick(ADJS); return { text: 'Which word describes something?', small: true, say: 'Which word is a describing word? It tells us what something is like.', choices: shuffle([a, pick(NOUNS), pick(VERBS)]), answer: a }; },
 };
-function genWords(L) {
-  const T = L === 1 ? ['rhyme', 'opposite', 'action', 'sentence', 'rhyme'] : L === 2 ? ['rhyme', 'opposite', 'action', 'sentence', 'punct', 'plural', 'isare'] : ['punct', 'plural', 'isare', 'waswere', 'aan', 'describe', 'sentence', 'opposite'];
+function genWords(L, only) {
+  const T = onlyTypes(L === 1 ? ['rhyme', 'opposite', 'action', 'sentence', 'rhyme'] : L === 2 ? ['rhyme', 'opposite', 'action', 'sentence', 'punct', 'plural', 'isare'] : ['punct', 'plural', 'isare', 'waswere', 'aan', 'describe', 'sentence', 'opposite'], only);
   return G[pick(T)]();
 }
 
@@ -521,24 +543,38 @@ function home() {
 
 /* quiz state */
 let Q = null;
-function startQuiz(subj) {
+function topicPick(subj) {
   clearTimers();
-  Q = { subj, idx: 0, total: 10, results: [], first: true, streak: 0, miss: 0, lock: false, earned: 0 };
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const s = SUBJ[subj];
+  app.innerHTML = `
+    <div class="qtop"><button class="iconbtn" data-act="home" aria-label="Home">🏠</button><div class="qtitle">${s.ic} ${s.name} <span class="lvl">Level ${P.levels[subj]}</span></div><div class="pill">⭐ <span id="sc">${P.stars}</span></div></div>
+    <div class="hero"><div>${bubbo()}</div><div class="say">What do you want to practice?<small>Pick one, or mix them all up!</small></div></div>
+    <div class="mpick topics">
+      ${TOPICS[subj].map(t => `<button class="ch" data-topic="${subj}:${t.k}"><b>${t.ic}</b>${t.name}</button>`).join('')}
+      <button class="ch" data-topic="${subj}:mix"><b>🎲</b>Mix it up</button>
+    </div>`;
+  speak(`${s.name}! What do you want to practice?`);
+}
+function startQuiz(subj, topic) {
+  clearTimers();
+  const tp = topicOf(subj, topic);
+  Q = { subj, topic: tp && tp.k, only: tp && tp.t, idx: 0, total: 10, results: [], first: true, streak: 0, miss: 0, lock: false, earned: 0 };
   next();
 }
 function next() {
   if (Q.idx >= Q.total) return finishQuiz();
-  Q.cur = GEN[Q.subj](P.levels[Q.subj]); Q.first = true; Q.lock = false;
+  Q.cur = GEN[Q.subj](P.levels[Q.subj], Q.only); Q.first = true; Q.lock = false;
   renderQuiz(); speakQ();
 }
 function speakQ() { if (Q && Q.cur) speak(Q.cur.say); }
 function renderQuiz(msg = "Let's go! Pop the right bubble.") {
-  const s = SUBJ[Q.subj], c = Q.cur;
+  const s = SUBJ[Q.subj], c = Q.cur, tp = topicOf(Q.subj, Q.topic);
   const dots = Array.from({ length: Q.total }, (_, i) => `<div class="dot ${Q.results[i] === 1 ? 'on' : Q.results[i] === 0 ? 'ok' : ''} ${i === Q.idx ? 'cur' : ''}"></div>`).join('');
   const wide = c.choices.some(x => x.length > 6);
   app.innerHTML = `
     <div class="qtop"><button class="iconbtn" data-act="home" aria-label="Home">🏠</button>
-      <div class="qtitle">${s.ic} ${s.name} <span class="lvl">Level ${P.levels[Q.subj]}</span></div>
+      <div class="qtitle">${tp ? `${tp.ic} ${tp.name}` : `${s.ic} ${s.name}`} <span class="lvl">Level ${P.levels[Q.subj]}</span></div>
       <div class="pill">⭐ <span id="sc">${P.stars}</span></div></div>
     <div class="dots">${dots}</div>
     <div class="stage">
@@ -577,7 +613,7 @@ function choose(btn) {
 function finishQuiz() {
   const good = Q.results.filter(x => x === 1).length;
   const rating = good >= 9 ? 3 : good >= 6 ? 2 : 1;
-  showDone(rating, `You got ${good} out of ${Q.total} on the first try!`, Q.earned, () => startQuiz(Q.subj));
+  showDone(rating, `You got ${good} out of ${Q.total} on the first try!`, Q.earned, () => startQuiz(Q.subj, Q.topic));
 }
 
 let beforeStars = 0;
@@ -693,7 +729,7 @@ function closeSettings() { const m = $('#modal'); if (m) m.remove(); }
 
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk]');
+  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk],[data-topic]');
   if (!t) { if (e.target.id === 'modal') closeSettings(); return; }
   ac();
   const d = t.dataset;
@@ -703,8 +739,10 @@ document.addEventListener('click', e => {
   if (d.go) {
     if (d.go === 'memory') return memoryPick();
     if (d.go === 'stickers') return stickers();
+    if (TOPICS[d.go]) return topicPick(d.go);
     beforeStars = P.stars; return startQuiz(d.go);
   }
+  if (d.topic) { const [subj, k] = d.topic.split(':'); beforeStars = P.stars; return startQuiz(subj, k); }
   if (d.mem) return startMemory(+d.mem);
   if (d.stk !== undefined) { const r = t.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, 10); sfx('pop'); return; }
   if (d.lvl) { const [k, n] = d.lvl.split(':'); P.levels[k] = +n; save(); t.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === t)); return; }
