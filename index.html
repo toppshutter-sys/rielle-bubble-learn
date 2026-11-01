@@ -175,10 +175,11 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .bank.words .ch{width:auto;aspect-ratio:auto;border-radius:999px;padding:12px 22px;font-size:clamp(22px,4vw,30px)}
 .bank .ch.used{visibility:hidden}
 
-/* writing: tracing pad */
-.tracebox{position:relative;width:100%;max-width:600px;margin:14px auto 0;border-radius:22px;background:#fbf9ff;box-shadow:inset 0 0 0 3px #eee6ff;overflow:hidden}
-.tracebox canvas{position:absolute;inset:0;width:100%;height:100%}
-.tracebox .ink{touch-action:none;cursor:crosshair}
+/* writing: write it on paper, then check */
+.writeans{margin-top:14px;font-size:clamp(44px,10vw,72px);font-weight:700;color:var(--purple);letter-spacing:2px;line-height:1.2;
+  background:#f4efff;border-radius:22px;padding:10px 18px;animation:popIn .4s cubic-bezier(.2,1.6,.4,1)}
+.writeans.sentence{font-size:clamp(26px,5.4vw,40px);letter-spacing:.5px}
+.writeans small{display:block;font-size:16px;font-weight:600;color:var(--ink2);letter-spacing:0;margin-bottom:2px}
 
 /* memory */
 .mpick{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
@@ -707,19 +708,20 @@ function genDictation(L) {
 }
 
 /* ---------- WRITING ---------- */
-// Trace a letter, number or word with a finger. Trace questions return { trace } instead of choices;
-// the tracing pad is set up by setupTrace() and scored by checkTrace().
+// Dictation on paper: Bubbo says a word (or a sentence at level 3), she writes it with a pencil,
+// then taps to see the answer and checks her own paper. Write questions return { write } instead of choices.
+const WSENT = [...SENT, ...SFILL.filter(f => f[3] === 2).map(f => f[0].replace('___', f[1]))];
 function genWriting(L) {
-  if (L === 1) {
-    const c = pick('abcdefghijklmnopqrstuvwxyz'.split(''));
-    return { trace: c, text: 'Trace the letter with your finger!', small: true, say: `Trace the lowercase letter ${c.toUpperCase()}.`, choices: [], answer: c };
+  if (L === 3 && rnd(3)) {
+    const s = pick(WSENT);
+    return { write: s, visual: '<div class="big">📝</div>', text: 'Listen, then write the sentence on your paper!', small: true,
+      say: `Write this sentence: ${s} Start with a capital letter, and put a mark at the end.`, choices: [], answer: s };
   }
-  if (L === 2) {
-    const c = pick('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('')), num = /\d/.test(c);
-    return { trace: c, text: `Trace the ${num ? 'number' : 'letter'} with your finger!`, small: true, say: num ? `Trace the number ${c}.` : `Trace the capital letter ${c}.`, choices: [], answer: c };
-  }
-  const w = rnd(6) ? pick([...SP[0].map(x => x[0]), ...SIGHT[0].filter(x => x.length >= 3 && x.length <= 4)]) : 'Rielle';
-  return { trace: w, text: 'Trace the word with your finger!', small: true, say: w === 'Rielle' ? 'Trace your name, Rielle!' : `Trace the word: ${w}.`, choices: [], answer: w };
+  const pool = L === 1 ? [...SP[0].map(x => x[0]), ...SIGHT[0].filter(x => x.length >= 2 && x.length <= 3 && x !== 'I')]
+    : L === 2 ? [...SP[1].map(x => x[0]), ...SIGHT[0].filter(x => x.length >= 3), ...SIGHT[1].filter(x => x.length >= 3 && x.length <= 4)]
+    : [...SP[2].map(x => x[0]), ...SIGHT[2].filter(x => x.length >= 4)];
+  const w = pick(pool);
+  return { write: w, visual: '<div class="big">📝</div>', text: 'Listen, then write the word on your paper!', small: true, say: `Write the word: ${w}.`, choices: [], answer: w };
 }
 
 /* ---------- PATTERNS ---------- */
@@ -801,7 +803,7 @@ function next() {
 function speakQ() { if (Q && Q.cur) speak(Q.cur.say); }
 function renderQuiz(msg) {
   const s = SUBJ[Q.subj], c = Q.cur, tp = topicOf(Q.subj, Q.topic);
-  msg = msg || (c.build ? 'Tap the tiles in the right order!' : c.trace ? 'Trace it, then tap Done!' : "Let's go! Pop the right bubble.");
+  msg = msg || (c.build ? 'Tap the tiles in the right order!' : c.write ? 'Grab your pencil and paper! ✏️' : "Let's go! Pop the right bubble.");
   const words = c.build && c.words;
   const dots = Array.from({ length: Q.total }, (_, i) => `<div class="dot ${Q.results[i] === 1 ? 'on' : Q.results[i] === 0 ? 'ok' : ''} ${i === Q.idx ? 'cur' : ''}"></div>`).join('');
   const wide = c.choices.some(x => x.length > 6);
@@ -815,67 +817,27 @@ function renderQuiz(msg) {
       <div class="qcard ${c.blocks && Q.blocks ? 'showblocks' : ''}"><button class="speak" data-act="say" aria-label="Read aloud">🔊</button>${c.blocks ? '<button class="blocksbtn" data-act="blocks" aria-label="Counting blocks">🧱</button>' : ''}
         <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div>${c.blocks ? blocksHtml(c.blocks) : ''}
         ${c.build ? `<div class="slots ${words ? 'words' : ''}">${c.units.map((_, i) => `<button class="slot" data-slot="${i}" aria-label="space ${i + 1}"></button>`).join('')}</div>` : ''}
-        ${c.trace ? '<div class="tracebox"><canvas class="guide"></canvas><canvas class="ink"></canvas></div>' : ''}</div>
+        <div id="writeans"></div></div>
       ${c.build ? `<div class="bank ${words ? 'words' : ''}">${c.pool.map((x, i) => `<button class="ch" data-tile="${i}">${x}</button>`).join('')}</div>`
-        : c.trace ? '<div class="btnrow"><button class="btn pink" data-act="trace-clear">🧽 Clear</button><button class="btn" data-act="trace-done">✓ Done</button></div>'
+        : c.write ? '<div class="btnrow" id="writebtns"><button class="btn" data-act="write-done">✏️ I wrote it!</button></div>'
         : `<div class="choices ${wide ? 'wide' : ''} ${c.emo ? 'emo' : ''}">${c.choices.map((x, i) => `<button class="ch" data-i="${i}">${x}</button>`).join('')}</div>`}
     </div>`;
-  if (c.trace) setupTrace();
 }
-// writing: a grey letter on handwriting lines (.guide) and her finger strokes on top (.ink)
-const TRACE_FONT = s => `700 ${s}px Fredoka, system-ui, sans-serif`;
-let TR = null;
-function setupTrace() {
-  const box = $('.tracebox'), guide = box.querySelector('.guide'), ink = box.querySelector('.ink'), t = Q.cur.trace;
-  const w = box.clientWidth, h = Math.round(Math.min(w * (t.length > 2 ? .5 : .75), 300)), dpr = window.devicePixelRatio || 1;
-  box.style.height = h + 'px';
-  [guide, ink].forEach(cv => { cv.width = w * dpr; cv.height = h * dpr; cv.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0); });
-  const tr = TR = { strokes: [], w, h, ink: ink.getContext('2d'), color: '#ff5f9e' };
-  const layout = () => {
-    if (TR !== tr) return;
-    const m = document.createElement('canvas').getContext('2d');
-    let fs = h * (t.length > 2 ? .7 : .85); m.font = TRACE_FONT(fs);
-    const tw = m.measureText(t).width; if (tw > w * .86) { fs *= w * .86 / tw; m.font = TRACE_FONT(fs); }
-    Object.assign(tr, { fs, lw: Math.max(10, fs * .13), x: (w - m.measureText(t).width) / 2, base: h / 2 + fs * .25,
-      cap: m.measureText('H').actualBoundingBoxAscent, xh: m.measureText('x').actualBoundingBoxAscent });
-    const g = guide.getContext('2d'); g.clearRect(0, 0, w, h);
-    const line = (y, dash) => { g.beginPath(); g.setLineDash(dash ? [10, 8] : []); g.moveTo(10, y); g.lineTo(w - 10, y); g.strokeStyle = '#d9cff7'; g.lineWidth = 2; g.stroke(); };
-    line(tr.base - tr.cap); line(tr.base - tr.xh, true); line(tr.base);
-    g.font = TRACE_FONT(fs); g.fillStyle = '#ece6ff'; g.fillText(t, tr.x, tr.base);
-    g.setLineDash([5, 5]); g.strokeStyle = '#b49bff'; g.lineWidth = 2; g.strokeText(t, tr.x, tr.base);
-  };
-  layout();
-  if (document.fonts) document.fonts.load(TRACE_FONT(100)).then(layout, () => {});
-  const pos = e => { const r = ink.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  ink.onpointerdown = e => { if (Q.lock) return; ink.setPointerCapture(e.pointerId); tr.down = true; tr.strokes.push([pos(e)]); paintInk(); };
-  ink.onpointermove = e => { const s = tr.strokes[tr.strokes.length - 1]; if (!tr.down || !s || TR !== tr) return; s.push(pos(e)); paintInk(); };
-  ink.onpointerup = ink.onpointercancel = () => { tr.down = false; };
+// writing: show the answer so she can check her paper, then she says how she did
+function writeCheck() {
+  const w = Q.cur.write, sentence = w.includes(' ');
+  $('#writeans').outerHTML = `<div class="writeans ${sentence ? 'sentence' : ''}"><small>Check your paper:</small>${w}</div>`;
+  $('#writebtns').innerHTML = '<button class="btn" data-act="write-yes">✅ I got it right!</button><button class="btn pink" data-act="write-no">🔁 Not yet</button>';
+  const m = 'Does your paper match?'; setMsg(m);
+  speak(sentence ? `Check your paper. ${w}` : `Check your paper. ${w} is spelled ${w.toUpperCase().split('').join(', ')}.`);
 }
-function strokeAll(x, lw) {
-  x.lineCap = x.lineJoin = 'round'; x.lineWidth = lw;
-  for (const s of TR.strokes) { x.beginPath(); x.moveTo(...s[0]); s.forEach(p => x.lineTo(...p)); if (s.length === 1) x.lineTo(s[0][0] + .1, s[0][1]); x.stroke(); }
-}
-function paintInk() { const x = TR.ink; x.clearRect(0, 0, TR.w, TR.h); x.strokeStyle = TR.color; strokeAll(x, TR.lw); }
-// how much of the letter she covered, and how much of her drawing stayed on the letter (checked on a 4px grid)
-function traceScore() {
-  const C = 4, gw = Math.ceil(TR.w / C), gh = Math.ceil(TR.h / C);
-  const cells = paint => {
-    const cv = document.createElement('canvas'); cv.width = gw; cv.height = gh; const x = cv.getContext('2d'); x.scale(1 / C, 1 / C); paint(x);
-    const d = x.getImageData(0, 0, gw, gh).data, s = new Uint8Array(gw * gh); for (let i = 0; i < s.length; i++) s[i] = d[i * 4 + 3] > 100 ? 1 : 0; return s;
-  };
-  const G = cells(x => { x.font = TRACE_FONT(TR.fs); x.fillText(Q.cur.trace, TR.x, TR.base); }), I = cells(x => strokeAll(x, TR.lw));
-  const near = (S, i, r) => { const cx = i % gw, cy = (i / gw) | 0; for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = cx + dx, Y = cy + dy; if (X >= 0 && Y >= 0 && X < gw && Y < gh && S[Y * gw + X]) return true; } return false; };
-  let g = 0, gc = 0, n = 0, nc = 0;
-  for (let i = 0; i < G.length; i++) { if (G[i]) { g++; if (near(I, i, 2)) gc++; } if (I[i]) { n++; if (near(G, i, 3)) nc++; } }
-  return { cover: g ? gc / g : 0, onLine: n ? nc / n : 0 };
-}
-function checkTrace() {
+function writeNotYet() {
   if (Q.lock) return;
-  if (!TR.strokes.length) { const m = 'Use your finger to trace the gray letters!'; setMsg(m); return speak(m); }
-  const { cover, onLine } = traceScore();
-  if (cover >= .6 && onLine >= .75) { TR.color = '#22be8c'; paintInk(); return gotIt($('.tracebox')); }
-  Q.lock = true; missed(cover < .6 ? 'Keep going! Trace all of it.' : 'Stay on the gray lines. Try again!');
-  later(() => { TR.strokes = []; paintInk(); Q.lock = false; }, 900);
+  Q.lock = true; Q.first = false; Q.results[Q.idx] = 0; Q.streak = 0; Q.miss++;
+  if (Q.miss >= 3 && P.levels[Q.subj] > 1) { P.levels[Q.subj]--; Q.miss = 0; save(); }
+  // no buzzer here: saying "not yet" honestly is a good thing
+  const m = "That's okay! Copy it from the screen, then tap Next."; setMsg(m); speak(m);
+  $('#writebtns').innerHTML = '<button class="btn" data-act="write-next">Next ▶</button>';
 }
 function setMsg(t, oops) {
   const m = $('#msg'); if (m) m.textContent = t;
@@ -1078,8 +1040,10 @@ document.addEventListener('click', e => {
   switch (d.act) {
     case 'home': Q = null; M = null; return home();
     case 'say': return speak(Q.cur.say, true);
-    case 'trace-clear': if (!Q.lock) { TR.strokes = []; paintInk(); } return;
-    case 'trace-done': return checkTrace();
+    case 'write-done': return writeCheck();
+    case 'write-yes': return Q.lock || gotIt($('.writeans'));
+    case 'write-no': return writeNotYet();
+    case 'write-next': Q.idx++; return next();
     case 'blocks': Q.blocks = t.closest('.qcard').classList.toggle('showblocks'); if (Q.blocks) speak(BLOCK_HINT[Q.cur.blocks.mode]); return;
     case 'hello': return speak(`${greeting()}, Rielle! I'm Bubbo. Pop a bubble and let's learn together!`, true);
     case 'again': beforeStars = P.stars; return doneAgain && doneAgain();
