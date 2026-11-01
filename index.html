@@ -101,7 +101,9 @@ button{font-family:inherit;color:inherit;cursor:pointer}
   background:linear-gradient(145deg,#a5f5d6,var(--mint));box-shadow:0 5px 0 #22a87e;transition:transform .15s}
 .blocksbtn:active,.qcard.showblocks .blocksbtn{transform:translateY(4px);box-shadow:0 1px 0 #22a87e}
 .blocks{display:none;flex-direction:column;align-items:center;gap:5px;margin-top:16px}
-.qcard.showblocks .blocks{display:flex;animation:popIn .3s}
+.qcard.showblocks .blocks,.blocks.on{display:flex;animation:popIn .3s}
+.clock{width:clamp(170px,40vw,240px);height:auto;filter:drop-shadow(0 8px 16px rgba(155,123,255,.25))}
+.pairs .egrp{font-size:clamp(22px,4.4vw,32px);padding:6px 8px;gap:2px}
 .brow{display:flex;gap:5px}
 .blk{position:relative;width:clamp(18px,5.4vw,30px);aspect-ratio:1;border-radius:7px;background:var(--purple);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}
 .blk:nth-child(6){margin-left:8px}
@@ -363,6 +365,10 @@ const TOPICS = {
     { k: 'add', name: 'Adding', ic: '➕', t: ['add', 'missing', 'double', 'tens'] },
     { k: 'sub', name: 'Take away', ic: '➖', t: ['sub'] },
     { k: 'compare', name: 'Bigger or smaller', ic: '⚖️', t: ['compare'] },
+    { k: 'place', name: 'Tens and ones', ic: '🔟', t: ['place', 'tenmore'] },
+    { k: 'word', name: 'Story problems', ic: '📝', t: ['word'] },
+    { k: 'time', name: 'Clocks', ic: '🕒', t: ['time'] },
+    { k: 'groups', name: 'Groups and pairs', ic: '🧺', t: ['groups', 'evenodd'] },
   ],
   words: [
     { k: 'rhyme', name: 'Rhymes', ic: '🎵', t: ['rhyme'] },
@@ -377,57 +383,139 @@ const topicOf = (subj, k) => (TOPICS[subj] || []).find(t => t.k === k);
 function onlyTypes(T, only) { if (!only) return T; const f = T.filter(x => only.includes(x)); return f.length ? f : only; }
 
 /* ---------- MATH ---------- */
+// level 1 = starting age 6 (numbers to 10-20, with pictures), level 2 = age 6 / first grade (within 20, numbers to 100,
+// clocks to the half hour), level 3 = age 7 / second grade (two-digit adding and taking away, numbers to 1000, groups)
 const ITEMS = [['🍎', 'apples'], ['🐟', 'fish'], ['⭐', 'stars'], ['🌸', 'flowers'], ['🐞', 'ladybugs'], ['🍓', 'strawberries'], ['🎈', 'balloons'], ['🐥', 'chicks'], ['🍪', 'cookies'], ['🦋', 'butterflies'], ['🍩', 'donuts'], ['🐢', 'turtles']];
+const KIDS = ['Mia', 'Leo', 'Ava', 'Sam', 'Zoe', 'Ben', 'Lily', 'Max'];
 const em = (e, n, cls = '') => Array.from({ length: n }, (_, i) => `<span class="e ${cls}" style="animation-delay:${i * 40}ms">${e}</span>`).join('');
-function genMath(L, only) {
-  const T = onlyTypes(L === 1 ? ['count', 'add', 'add', 'sub', 'compare'] : L === 2 ? ['add', 'sub', 'missing', 'compare', 'count', 'double'] : ['add', 'sub', 'missing', 'tens', 'double', 'compare'], only);
-  const t = pick(T), [e, name] = pick(ITEMS);
-  if (t === 'count') {
-    const n = L === 1 ? 2 + rnd(9) : 9 + rnd(12);
-    return { visual: `<div class="egrid">${em(e, n)}</div>`, text: `How many ${name}?`, small: true, say: `Count the ${name}. How many are there?`, choices: numChoices(n, 3, 3, 1), answer: String(n) };
-  }
-  if (t === 'add') {
+const STEPS = [1, -1, 2, -2, 10, -10];
+// wrong answers close to n (off by one, two, or ten), never below zero
+const near = (n, steps = STEPS, k = 4) => uniq(n, () => { const s = pick(steps); return n + s < 0 ? n - s : n + s; }, k);
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const hour12 = h => ((h - 1 + 12) % 12) + 1;
+function clockSvg(h, m) {
+  const pt = (deg, len) => { const r = (deg - 90) * Math.PI / 180; return [(100 + len * Math.cos(r)).toFixed(1), (100 + len * Math.sin(r)).toFixed(1)]; };
+  const hand = (deg, len, w, col) => { const [x, y] = pt(deg, len); return `<line x1="100" y1="100" x2="${x}" y2="${y}" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; };
+  const ticks = Array.from({ length: 60 }, (_, i) => { const [x1, y1] = pt(i * 6, 86), [x2, y2] = pt(i * 6, i % 5 ? 82 : 78); return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#b9a8f5" stroke-width="${i % 5 ? 1.5 : 3}"/>`; }).join('');
+  const nums = Array.from({ length: 12 }, (_, i) => { const [x, y] = pt((i + 1) * 30, 64); return `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="700" fill="#3a2a6b">${i + 1}</text>`; }).join('');
+  return `<svg class="clock" viewBox="0 0 200 200" role="img" aria-label="clock"><circle cx="100" cy="100" r="92" fill="#fff" stroke="#9b7bff" stroke-width="8"/>${ticks}${nums}
+    ${hand(((h % 12) + m / 60) * 30, 44, 9, '#3a2a6b')}${hand(m * 6, 70, 5, '#ff5f9e')}<circle cx="100" cy="100" r="6" fill="#3a2a6b"/></svg>`;
+}
+const MATH = {
+  count(L, e, name) {
+    const n = L === 1 ? 3 + rnd(13) : 10 + rnd(16);
+    return { visual: `<div class="egrid">${em(e, n)}</div>`, text: `How many ${name}?`, small: true, say: `Count the ${name}. How many are there?`, choices: numChoices(n, 3, L === 1 ? 3 : 4, 1), answer: String(n) };
+  },
+  add(L, e) {
     let a, b, vis = '';
-    if (L === 1) { a = 1 + rnd(5); b = 1 + rnd(5); vis = `<div class="eq"><div class="egrp">${em(e, a)}</div><b class="op">+</b><div class="egrp">${em(e, b)}</div></div>`; }
-    else if (L === 2) { a = 3 + rnd(10); b = 2 + rnd(8); }
-    else { a = 10 + rnd(31); b = 2 + rnd(9); }
+    if (L === 1) { a = 1 + rnd(6); b = 1 + rnd(10 - a); vis = `<div class="eq"><div class="egrp">${em(e, a)}</div><b class="op">+</b><div class="egrp">${em(e, b)}</div></div>`; }
+    else if (L === 2) { if (rnd(3)) { a = 2 + rnd(12); b = 1 + rnd(Math.min(9, 20 - a)); } else { a = 20 + rnd(70); b = 1 + rnd(9); } }
+    else { a = 10 + rnd(70); b = 10 + rnd(90 - a); }
     const s = a + b;
-    return { visual: vis, text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: numChoices(s, 3, L === 1 ? 3 : 4), answer: String(s), blocks: L > 1 && { a, b, mode: 'add' } };
-  }
-  if (t === 'sub') {
+    return { visual: vis, text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: L === 1 ? numChoices(s, 3, 3) : near(s), answer: String(s), blocks: L > 1 && { a, b, mode: 'add' } };
+  },
+  sub(L, e, name) {
     let a, b, vis = '';
-    if (L === 1) { a = 3 + rnd(7); b = 1 + rnd(a - 1); vis = `<div class="egrid">${em(e, a - b)}${em(e, b, 'gone')}</div>`; }
-    else if (L === 2) { a = 8 + rnd(11); b = 1 + rnd(8); }
-    else { a = 20 + rnd(31); b = 2 + rnd(9); }
+    if (L === 1) { a = 3 + rnd(8); b = 1 + rnd(a - 1); vis = `<div class="egrid">${em(e, a - b)}${em(e, b, 'gone')}</div>`; }
+    else if (L === 2) { if (rnd(3)) { a = 10 + rnd(11); b = 1 + rnd(9); } else { a = 20 + rnd(80); b = 1 + rnd(9); } }
+    else { a = 30 + rnd(70); b = 10 + rnd(a - 19); }
     const d = a - b;
-    return { visual: vis, text: `${a} − ${b} = ?`, say: L === 1 ? `There are ${a} ${name}. ${b} went away. How many are left?` : `What is ${a} take away ${b}?`, choices: numChoices(d, 3, L === 1 ? 3 : 4), answer: String(d), blocks: L > 1 && { a, b, mode: 'sub' } };
-  }
-  if (t === 'compare') {
-    const max = L === 1 ? 10 : L === 2 ? 50 : 100; let a, b;
-    do { a = 1 + rnd(max); b = 1 + rnd(max); } while (a === b);
-    const small = rnd(2) && L > 1;
-    const vis = L === 1 ? `<div class="eq"><div class="egrp">${em(e, a)}</div><b class="op">or</b><div class="egrp">${em(e, b)}</div></div>` : '';
-    const w = small ? 'smaller' : 'bigger';
+    return { visual: vis, text: `${a} − ${b} = ?`, say: L === 1 ? `There are ${a} ${name}. ${b} went away. How many are left?` : `What is ${a} take away ${b}?`, choices: L === 1 ? numChoices(d, 3, 3) : near(d), answer: String(d), blocks: L > 1 && { a, b, mode: 'sub' } };
+  },
+  compare(L, e) {
+    let a, b;
+    if (L === 3) {
+      // close three-digit numbers, so she has to look at hundreds, then tens, then ones
+      a = 100 + rnd(900); const d = String(a);
+      b = pick([a + 1, a - 1, a + 10, a - 10, a + 100, a - 100, +(d[0] + d[2] + d[1]), +(d[1] + d[0] + d[2])].filter(x => x >= 100 && x <= 999 && x !== a));
+    } else { const max = L === 1 ? 20 : 100; do { a = 1 + rnd(max); b = 1 + rnd(max); } while (a === b); }
+    const small = rnd(2) && L > 1, w = small ? 'smaller' : 'bigger';
+    const vis = L === 1 && a <= 10 && b <= 10 ? `<div class="eq"><div class="egrp">${em(e, a)}</div><b class="op">or</b><div class="egrp">${em(e, b)}</div></div>` : '';
     return { visual: vis, text: `Which number is ${w}?`, small: true, say: `Which number is ${w}? ${a} or ${b}?`, choices: [String(a), String(b)], answer: String(small ? Math.min(a, b) : Math.max(a, b)) };
-  }
-  if (t === 'missing') {
-    const c = L === 2 ? 5 + rnd(6) : 10 + rnd(11), a = 1 + rnd(c - 1), b = c - a;
-    return { text: `${a} + <span class="blank">?</span> = ${c}`, say: `${a} plus what makes ${c}?`, choices: numChoices(b, 3, 4, 0), answer: String(b), blocks: { a, b, mode: 'missing' } };
-  }
-  if (t === 'tens') {
-    const a = 10 * (1 + rnd(5)), b = 10 * (1 + rnd(4)), s = a + b;
-    return { text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: uniq(s, () => s + 10 * (rnd(2) ? 1 : -1) * (1 + rnd(2)), 4), answer: String(s), blocks: { a, b, mode: 'add' } };
-  }
-  const n = 2 + rnd(L === 2 ? 5 : 9);
-  return { text: `${n} + ${n} = ?`, say: `What is double ${n}? ${n} plus ${n}.`, choices: numChoices(n * 2, 3, L === 1 ? 3 : 4), answer: String(n * 2), blocks: { a: n, b: n, mode: 'add' } };
+  },
+  missing(L) {
+    let a, c;
+    if (L === 3) { c = 30 + rnd(71); a = 10 + rnd(c - 19); }
+    else { c = L === 1 ? 5 + rnd(6) : 10 + rnd(11); a = 1 + rnd(c - 1); }
+    const b = c - a;
+    return { text: `${a} + <span class="blank">?</span> = ${c}`, say: `${a} plus what makes ${c}?`, choices: L === 3 ? near(b) : numChoices(b, 3, L === 1 ? 3 : 4, 0), answer: String(b), blocks: { a, b, mode: 'missing' } };
+  },
+  tens(L) {
+    const u = L === 3 && rnd(2) ? 100 : 10, a = u * (1 + rnd(5)), b = u * (1 + rnd(4)), s = a + b;
+    return { text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: near(s, [u, -u, 2 * u, -2 * u]), answer: String(s), blocks: s <= 100 && { a, b, mode: 'add' } };
+  },
+  double(L) {
+    const n = L === 1 ? 1 + rnd(5) : L === 2 ? 2 + rnd(9) : 6 + rnd(15);
+    return { text: `${n} + ${n} = ?`, say: `What is double ${n}? ${n} plus ${n}.`, choices: L === 3 ? near(n * 2) : numChoices(n * 2, 3, L === 1 ? 3 : 4), answer: String(n * 2), blocks: { a: n, b: n, mode: 'add' } };
+  },
+  place(L) {
+    if (L === 3) {
+      const h = 1 + rnd(9), t = rnd(10), o = rnd(10), n = 100 * h + 10 * t + o;
+      const wrong = [100 * h + 10 * o + t, 100 * t + 10 * h + o, 100 * o + 10 * t + h, n + 10, n - 10, n + 100].filter(x => x !== n && x >= 0);
+      const parts = `${h} hundred${h === 1 ? '' : 's'}, ${plural(t, 'ten')} and ${plural(o, 'one')}`;
+      return { text: `${parts} = ?`, small: true, say: `What number has ${parts}?`, choices: uniq(n, () => pick(wrong), 4), answer: String(n) };
+    }
+    // blocks in rows of ten: count the tens, then the ones
+    const n = L === 1 ? 11 + rnd(9) : 20 + rnd(80), t = Math.floor(n / 10), o = n % 10;
+    const wrong = [n + 1, n - 1, n + 10, n - 10, o ? 10 * o + t : n + 2].filter(x => x !== n && x > 0);
+    return { visual: blocksHtml({ a: n, b: 0, mode: 'add' }, true), text: 'How many blocks?', small: true, say: 'Count the rows of ten, then the ones. How many blocks are there?', choices: uniq(n, () => pick(wrong), L === 1 ? 3 : 4), answer: String(n) };
+  },
+  tenmore(L) {
+    const u = L === 3 && rnd(2) ? 100 : 10, n = L === 3 ? 100 + rnd(800) : 10 + rnd(80);
+    const more = rnd(2) || n < 2 * u, ans = more ? n + u : n - u;
+    const w = more ? 'more' : 'less', wrong = [ans + 1, ans - 1, more ? n + 1 : n - 1, more ? n - u : n + u, more ? ans + u : ans - u].filter(x => x >= 0 && x !== ans);
+    return { text: `What is ${u} ${w} than ${n}?`, small: true, say: `What is ${u} ${w} than ${n}?`, choices: uniq(ans, () => pick(wrong), 4), answer: String(ans) };
+  },
+  word(L, e, name) {
+    const N = pick(KIDS), N2 = pick(KIDS.filter(k => k !== N)), kind = L === 1 ? pick(['add', 'sub']) : pick(['add', 'sub', 'diff']);
+    let a, b, story, q, ans, blocks;
+    if (kind === 'add') {
+      if (L === 1) { a = 2 + rnd(6); b = 2 + rnd(9 - a); } else if (L === 2) { a = 3 + rnd(13); b = 2 + rnd(Math.min(9, 20 - a) - 1); } else { a = 10 + rnd(60); b = 10 + rnd(Math.min(30, 90 - a)); }
+      story = `${N} has ${a} ${name}. ${N} gets ${b} more.`; q = `How many ${name} does ${N} have now?`; ans = a + b; blocks = { a, b, mode: 'add' };
+    } else if (kind === 'sub') {
+      if (L === 1) { a = 4 + rnd(7); b = 2 + rnd(a - 3); } else if (L === 2) { a = 8 + rnd(13); b = 2 + rnd(Math.min(9, a - 2) - 1); } else { a = 30 + rnd(70); b = 5 + rnd(a - 14); }
+      story = `${N} has ${a} ${name}. ${N} gives ${b} to ${N2}.`; q = `How many ${name} does ${N} have left?`; ans = a - b; blocks = { a, b, mode: 'sub' };
+    } else {
+      const s = L === 2 ? 2 + rnd(9) : 10 + rnd(40), big = s + (L === 2 ? 2 + rnd(9) : 5 + rnd(40));
+      story = `${N} has ${big} ${name}. ${N2} has ${s} ${name}.`; q = `How many more ${name} does ${N} have?`; ans = big - s; blocks = { a: s, b: ans, mode: 'missing' };
+    }
+    return { visual: `<p class="story">${e} ${story}</p>`, text: q, small: true, say: `${story} ${q}`, choices: L === 1 ? numChoices(ans, 2, 3, 1) : near(ans), answer: String(ans), blocks };
+  },
+  time(L) {
+    const h = 1 + rnd(12), m = L === 1 ? 0 : L === 2 ? 30 * rnd(2) : 5 * rnd(12);
+    const say = (hh, mm) => L < 3 ? (mm ? `half past ${hh}` : `${hh} o'clock`) : `${hh}:${String(mm).padStart(2, '0')}`;
+    const ans = say(h, m);
+    const wrong = L < 3
+      ? () => say(hour12(h + pick([1, -1, 0])), L === 1 ? 0 : 30 * rnd(2))
+      // off by a few minutes, off by an hour, or the two hands mixed up
+      : () => [say(h, (m + pick([5, -5, 10, -10, 15]) + 60) % 60), say(hour12(h + pick([1, -1])), m), say(m ? m / 5 : 12, (h % 12) * 5)][rnd(3)];
+    return { visual: clockSvg(h, m), text: 'What time is it?', small: true, say: 'Look at the clock. What time is it?', choices: uniq(ans, wrong, L === 3 ? 4 : 3), answer: ans };
+  },
+  groups(L, e, name) {
+    const g = 2 + rnd(L === 3 ? 4 : 2), k = 2 + rnd(L === 3 ? 4 : 3);
+    return { visual: `<div class="eq">${Array.from({ length: g }, () => `<div class="egrp">${em(e, k)}</div>`).join('')}</div>`, text: `${g} groups of ${k}. How many ${name} in all?`, small: true,
+      say: `There are ${g} groups of ${k} ${name}. How many ${name} are there in all?`, choices: numChoices(g * k, 3, 4, 1), answer: String(g * k) };
+  },
+  evenodd(L, e) {
+    const n = 2 + rnd(L === 1 ? 9 : L === 2 ? 19 : 49);
+    const vis = n <= 20 ? `<div class="eq pairs">${Array.from({ length: Math.ceil(n / 2) }, (_, i) => `<div class="egrp">${em(e, i * 2 + 1 < n ? 2 : 1)}</div>`).join('')}</div>` : '';
+    return { visual: vis, text: `Is ${n} even or odd?`, small: true, say: `Is ${n} an even number or an odd number? Even numbers make pairs with none left over.`, choices: ['even', 'odd'], answer: n % 2 ? 'odd' : 'even' };
+  },
+};
+function genMath(L, only) {
+  const T = onlyTypes(L === 1 ? ['count', 'count', 'add', 'add', 'sub', 'sub', 'compare', 'missing', 'double', 'place']
+    : L === 2 ? ['add', 'add', 'sub', 'sub', 'missing', 'compare', 'place', 'tenmore', 'word', 'time', 'double', 'tens', 'count']
+    : ['add', 'add', 'sub', 'sub', 'missing', 'compare', 'place', 'tenmore', 'word', 'word', 'time', 'groups', 'evenodd', 'tens', 'double'], only);
+  const [e, name] = pick(ITEMS);
+  return MATH[pick(T)](L, e, name);
 }
 // counting blocks in rows of ten: add = two colors, sub = the taken-away ones crossed out, missing = empty boxes to count
 const BLOCK_HINT = { add: 'Count all the blocks.', sub: 'Count the blocks that are left.', missing: 'Count the empty boxes.' };
-function blocksHtml({ a, b, mode }) {
+function blocksHtml({ a, b, mode }, shown) {
   const cells = mode === 'sub' ? [...Array(a - b).fill(''), ...Array(b).fill('gone')] : [...Array(a).fill(''), ...Array(b).fill(mode === 'add' ? 'b2' : 'empty')];
   const rows = [];
   for (let i = 0; i < cells.length; i += 10) rows.push(`<div class="brow">${cells.slice(i, i + 10).map(c => `<span class="blk ${c}" data-blk></span>`).join('')}</div>`);
-  return `<div class="blocks">${rows.join('')}</div>`;
+  return `<div class="blocks ${shown ? 'on' : ''}">${rows.join('')}</div>`;
 }
 
 /* ---------- GRAMMAR ---------- */
