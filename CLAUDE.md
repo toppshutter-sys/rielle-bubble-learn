@@ -1,6 +1,6 @@
 # Rielle's Bubble Learn
 
-An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, patterns, a memory-match game and a sticker book. Bubble theme, read-aloud questions, sounds and rewards.
+An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, sight words, patterns, a memory-match game and a sticker book. Bubble theme, read-aloud questions, sounds and rewards.
 
 ## Structure
 - Everything lives in `index.html`: HTML, CSS and JavaScript in one file. There is no build step and there are no dependencies, except the Google Font "Fredoka".
@@ -12,7 +12,7 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 - `P`: saved progress (stars, per-subject levels, sound and voice toggles), stored in localStorage under `rielle-bubble-learn`.
 - `sfx()` / `tone()`: sound effects, made with the Web Audio API (no audio files).
 - `speak()`: reads text aloud with the browser's built-in speech synthesis.
-- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genPattern`. Each one takes a level (1–3) and returns `{ text, say, visual?, choices[], answer, small?, emo? }`. `answer` must be one of `choices`, and choices must be unique strings.
+- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genSight` (uses the `SIGHT` word lists and the `SFILL` sentences), `genPattern`. Each one takes a level (1–3) and returns `{ text, say, visual?, choices[], answer, small?, emo? }`. `answer` must be one of `choices`, and choices must be unique strings.
 - `GEN` maps each subject key to its generator.
 - Screens: `home()`, `startQuiz()` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
 - All clicks go through one delegated `document` click handler that reads `data-*` attributes.
