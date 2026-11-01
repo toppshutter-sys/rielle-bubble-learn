@@ -617,7 +617,7 @@ function genSight(L) {
   }
   // hear: Bubbo says a word and she finds it; higher levels mix in look-alike words
   const w = pick(SIGHT[L - 1]), near = pool.filter(x => x !== w && x[0].toLowerCase() === w[0].toLowerCase());
-  return { visual: '<div class="big">👂</div>', text: 'Listen, then tap the word! 🔊', small: true, say: `Find the word ${w}. ${w}.`,
+  return { visual: '<div class="big">👂</div>', text: 'Listen, then tap the word! 🔊', small: true, say: `Find the word: ${w}.`,
     choices: uniq(w, () => L > 1 && near.length && rnd(2) ? pick(near) : pick(pool), L === 1 ? 3 : 4), answer: w };
 }
 
@@ -679,7 +679,7 @@ function genDictation(L) {
     return { ...buildQ(s.split(' '), [], true), visual: '<div class="big">👂</div>', text: 'Listen, then build the sentence! 🔊', small: true, say: `Build the sentence. ${s}` };
   }
   const [w, e] = L === 1 ? pick(SP[0].filter(([x]) => !['net', 'cup', 'map'].includes(x))) : L === 2 ? pick([...SP[1], ...SIGHT[0].filter(x => x.length >= 3).map(x => [x])]) : pick(SP[2]);
-  return { ...buildQ([...w], extraLetters(w, L === 1 ? 1 : 2)), visual: `<div class="big">${L === 1 ? e : '👂'}</div>`, text: 'Listen, then spell the word! 🔊', small: true, say: `Spell ${w}. ${w}.` };
+  return { ...buildQ([...w], extraLetters(w, L === 1 ? 1 : 2)), visual: `<div class="big">${L === 1 ? e : '👂'}</div>`, text: 'Listen, then spell the word! 🔊', small: true, say: `Spell the word: ${w}.` };
 }
 
 /* ---------- PATTERNS ---------- */
