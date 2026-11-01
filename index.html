@@ -97,6 +97,20 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .speak{position:absolute;top:14px;right:14px;border:none;width:52px;height:52px;border-radius:50%;font-size:24px;
   background:linear-gradient(145deg,#ffe07a,var(--yellow));box-shadow:0 5px 0 #e3a915;transition:transform .15s}
 .speak:active{transform:translateY(4px);box-shadow:0 1px 0 #e3a915}
+.blocksbtn{position:absolute;top:14px;left:14px;border:none;width:52px;height:52px;border-radius:50%;font-size:24px;
+  background:linear-gradient(145deg,#a5f5d6,var(--mint));box-shadow:0 5px 0 #22a87e;transition:transform .15s}
+.blocksbtn:active,.qcard.showblocks .blocksbtn{transform:translateY(4px);box-shadow:0 1px 0 #22a87e}
+.blocks{display:none;flex-direction:column;align-items:center;gap:5px;margin-top:16px}
+.qcard.showblocks .blocks{display:flex;animation:popIn .3s}
+.brow{display:flex;gap:5px}
+.blk{position:relative;width:clamp(18px,5.4vw,30px);aspect-ratio:1;border-radius:7px;background:var(--purple);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);cursor:pointer}
+.blk:nth-child(6){margin-left:8px}
+.blk.b2{background:var(--pink)}
+.blk.gone{background:#d9d3ea;box-shadow:none}
+.blk.gone:after{content:"";position:absolute;left:-2px;right:-2px;top:50%;height:4px;margin-top:-2px;background:var(--coral);border-radius:2px;transform:rotate(-40deg)}
+.blk.empty{background:#fff;box-shadow:none;outline:3px dashed var(--pink);outline-offset:-3px}
+.blk.tick:before{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-weight:700;font-size:.8em}
+.blk.empty.tick:before,.blk.gone.tick:before{color:var(--pink)}
 .visual{margin-bottom:12px}
 .visual:empty{display:none}
 .qtext{font-size:clamp(28px,6vw,52px);font-weight:700;line-height:1.25}
@@ -358,7 +372,7 @@ function genMath(L, only) {
     else if (L === 2) { a = 3 + rnd(10); b = 2 + rnd(8); }
     else { a = 10 + rnd(31); b = 2 + rnd(9); }
     const s = a + b;
-    return { visual: vis, text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: numChoices(s, 3, L === 1 ? 3 : 4), answer: String(s) };
+    return { visual: vis, text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: numChoices(s, 3, L === 1 ? 3 : 4), answer: String(s), blocks: L > 1 && { a, b, mode: 'add' } };
   }
   if (t === 'sub') {
     let a, b, vis = '';
@@ -366,7 +380,7 @@ function genMath(L, only) {
     else if (L === 2) { a = 8 + rnd(11); b = 1 + rnd(8); }
     else { a = 20 + rnd(31); b = 2 + rnd(9); }
     const d = a - b;
-    return { visual: vis, text: `${a} − ${b} = ?`, say: L === 1 ? `There are ${a} ${name}. ${b} went away. How many are left?` : `What is ${a} take away ${b}?`, choices: numChoices(d, 3, L === 1 ? 3 : 4), answer: String(d) };
+    return { visual: vis, text: `${a} − ${b} = ?`, say: L === 1 ? `There are ${a} ${name}. ${b} went away. How many are left?` : `What is ${a} take away ${b}?`, choices: numChoices(d, 3, L === 1 ? 3 : 4), answer: String(d), blocks: L > 1 && { a, b, mode: 'sub' } };
   }
   if (t === 'compare') {
     const max = L === 1 ? 10 : L === 2 ? 50 : 100; let a, b;
@@ -378,14 +392,22 @@ function genMath(L, only) {
   }
   if (t === 'missing') {
     const c = L === 2 ? 5 + rnd(6) : 10 + rnd(11), a = 1 + rnd(c - 1), b = c - a;
-    return { text: `${a} + <span class="blank">?</span> = ${c}`, say: `${a} plus what makes ${c}?`, choices: numChoices(b, 3, 4, 0), answer: String(b) };
+    return { text: `${a} + <span class="blank">?</span> = ${c}`, say: `${a} plus what makes ${c}?`, choices: numChoices(b, 3, 4, 0), answer: String(b), blocks: { a, b, mode: 'missing' } };
   }
   if (t === 'tens') {
     const a = 10 * (1 + rnd(5)), b = 10 * (1 + rnd(4)), s = a + b;
-    return { text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: uniq(s, () => s + 10 * (rnd(2) ? 1 : -1) * (1 + rnd(2)), 4), answer: String(s) };
+    return { text: `${a} + ${b} = ?`, say: `What is ${a} plus ${b}?`, choices: uniq(s, () => s + 10 * (rnd(2) ? 1 : -1) * (1 + rnd(2)), 4), answer: String(s), blocks: { a, b, mode: 'add' } };
   }
   const n = 2 + rnd(L === 2 ? 5 : 9);
-  return { text: `${n} + ${n} = ?`, say: `What is double ${n}? ${n} plus ${n}.`, choices: numChoices(n * 2, 3, L === 1 ? 3 : 4), answer: String(n * 2) };
+  return { text: `${n} + ${n} = ?`, say: `What is double ${n}? ${n} plus ${n}.`, choices: numChoices(n * 2, 3, L === 1 ? 3 : 4), answer: String(n * 2), blocks: { a: n, b: n, mode: 'add' } };
+}
+// counting blocks in rows of ten: add = two colors, sub = the taken-away ones crossed out, missing = empty boxes to count
+const BLOCK_HINT = { add: 'Count all the blocks.', sub: 'Count the blocks that are left.', missing: 'Count the empty boxes.' };
+function blocksHtml({ a, b, mode }) {
+  const cells = mode === 'sub' ? [...Array(a - b).fill(''), ...Array(b).fill('gone')] : [...Array(a).fill(''), ...Array(b).fill(mode === 'add' ? 'b2' : 'empty')];
+  const rows = [];
+  for (let i = 0; i < cells.length; i += 10) rows.push(`<div class="brow">${cells.slice(i, i + 10).map(c => `<span class="blk ${c}" data-blk></span>`).join('')}</div>`);
+  return `<div class="blocks">${rows.join('')}</div>`;
 }
 
 /* ---------- GRAMMAR ---------- */
@@ -579,8 +601,8 @@ function renderQuiz(msg = "Let's go! Pop the right bubble.") {
     <div class="dots">${dots}</div>
     <div class="stage">
       <div class="helper"><div id="mascot">${bubbo()}</div><div class="say" id="msg">${msg}</div></div>
-      <div class="qcard"><button class="speak" data-act="say" aria-label="Read aloud">🔊</button>
-        <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div></div>
+      <div class="qcard ${c.blocks && Q.blocks ? 'showblocks' : ''}"><button class="speak" data-act="say" aria-label="Read aloud">🔊</button>${c.blocks ? '<button class="blocksbtn" data-act="blocks" aria-label="Counting blocks">🧱</button>' : ''}
+        <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div>${c.blocks ? blocksHtml(c.blocks) : ''}</div>
       <div class="choices ${wide ? 'wide' : ''} ${c.emo ? 'emo' : ''}">${c.choices.map((x, i) => `<button class="ch" data-i="${i}">${x}</button>`).join('')}</div>
     </div>`;
 }
@@ -729,12 +751,13 @@ function closeSettings() { const m = $('#modal'); if (m) m.remove(); }
 
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk],[data-topic]');
+  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk],[data-topic],[data-blk]');
   if (!t) { if (e.target.id === 'modal') closeSettings(); return; }
   ac();
   const d = t.dataset;
   if (d.card !== undefined) return flipCard(t);
   if (d.i !== undefined && Q && t.closest('.choices')) return choose(t);
+  if (d.blk !== undefined) { t.classList.toggle('tick'); return sfx('flip'); }
   sfx('tap');
   if (d.go) {
     if (d.go === 'memory') return memoryPick();
@@ -750,6 +773,7 @@ document.addEventListener('click', e => {
   switch (d.act) {
     case 'home': Q = null; M = null; return home();
     case 'say': return speak(Q.cur.say, true);
+    case 'blocks': Q.blocks = t.closest('.qcard').classList.toggle('showblocks'); if (Q.blocks) speak(BLOCK_HINT[Q.cur.blocks.mode]); return;
     case 'hello': return speak(`${greeting()}, Rielle! I'm Bubbo. Pop a bubble and let's learn together!`, true);
     case 'again': beforeStars = P.stars; return doneAgain && doneAgain();
     case 'memmenu': return memoryPick();
