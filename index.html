@@ -72,7 +72,7 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .subj .ic{font-size:clamp(40px,8vw,66px);line-height:1;filter:drop-shadow(0 4px 6px rgba(0,0,0,.15))}
 .subj .nm{font-size:clamp(19px,3.4vw,28px);font-weight:700;text-shadow:0 2px 6px rgba(0,0,0,.18)}
 .subj .lv{font-size:clamp(12px,2vw,15px);background:rgba(255,255,255,.28);padding:2px 10px;border-radius:999px;font-weight:600}
-.subj:nth-child(2){animation-delay:-.7s}.subj:nth-child(3){animation-delay:-1.4s}.subj:nth-child(4){animation-delay:-2.1s}.subj:nth-child(5){animation-delay:-2.8s}.subj:nth-child(6){animation-delay:-3.5s}.subj:nth-child(7){animation-delay:-4.2s}
+.subj:nth-child(2){animation-delay:-.7s}.subj:nth-child(3){animation-delay:-1.4s}.subj:nth-child(4){animation-delay:-2.1s}.subj:nth-child(5){animation-delay:-2.8s}.subj:nth-child(6){animation-delay:-3.5s}.subj:nth-child(7){animation-delay:-4.2s}.subj:nth-child(8){animation-delay:-4.9s}.subj:nth-child(9){animation-delay:-5.6s}
 
 /* quiz */
 .qtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
@@ -157,6 +157,21 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .ch.nope{animation:shake .45s;opacity:.35;pointer-events:none;filter:grayscale(.6)}
 @keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
 .ch.fade{opacity:.25;pointer-events:none}
+.readword{font-size:clamp(48px,11vw,80px);letter-spacing:2px}
+.story{font-size:clamp(20px,3.6vw,28px);font-weight:500;line-height:1.45;text-align:left;background:#f4efff;border-radius:20px;padding:14px 18px;max-width:600px;margin:0 auto}
+
+/* dictation: build the word from tiles */
+.slots{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:16px}
+.slot{min-width:clamp(44px,10vw,64px);height:clamp(54px,11vw,72px);padding:0 10px;border:none;border-radius:16px;background:#fff;outline:3px dashed var(--purple);outline-offset:-3px;
+  font-size:clamp(28px,6vw,42px);font-weight:700;color:var(--ink);transition:background .2s}
+.slots.words .slot{min-width:clamp(60px,14vw,90px);font-size:clamp(20px,4vw,30px)}
+.slot.full{background:#f4efff;outline-style:solid}
+.slot.ok{background:#eafff6;outline-color:var(--mint)}
+.slot.bad{background:#ffe9ec;outline-color:var(--coral);animation:shake .45s}
+.bank{display:flex;flex-wrap:wrap;justify-content:center;gap:clamp(10px,2.4vw,18px);max-width:640px}
+.bank .ch{width:clamp(60px,14vw,86px);font-size:clamp(28px,6vw,42px)}
+.bank.words .ch{width:auto;aspect-ratio:auto;border-radius:999px;padding:12px 22px;font-size:clamp(22px,4vw,30px)}
+.bank .ch.used{visibility:hidden}
 
 /* memory */
 .mpick{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
@@ -247,7 +262,7 @@ function numChoices(ans, spread = 3, n = 3, min = 0) {
 
 /* ---------- saved progress (this browser only) ---------- */
 const KEY = 'rielle-bubble-learn';
-let P = { stars: 0, levels: { math: 1, words: 1, spell: 1, sight: 1, pattern: 1 }, sound: true, voice: true };
+let P = { stars: 0, levels: { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, pattern: 1 }, sound: true, voice: true };
 try { const s = JSON.parse(localStorage.getItem(KEY)); if (s) P = Object.assign(P, s, { levels: Object.assign(P.levels, s.levels || {}) }); } catch (e) {}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(P)); } catch (e) {} }
 
@@ -331,6 +346,8 @@ const SUBJ = {
   words:   { name: 'Grammar',  ic: '📖', c1: '#ffa8cf', c2: '#ff5f9e', sh: 'rgba(255,95,158,.4)' },
   spell:   { name: 'Spelling', ic: '🔤', c1: '#7ff0c6', c2: '#22be8c', sh: 'rgba(34,190,140,.4)' },
   sight:   { name: 'Sight Words', ic: '👀', c1: '#ff9fa8', c2: '#ff5d73', sh: 'rgba(255,93,115,.4)' },
+  reading: { name: 'Reading', ic: '📚', c1: '#7ee8e0', c2: '#14b8a6', sh: 'rgba(20,184,166,.4)' },
+  dictation: { name: 'Dictation', ic: '✍️', c1: '#b4bcff', c2: '#6366f1', sh: 'rgba(99,102,241,.4)' },
   pattern: { name: 'Patterns', ic: '🧩', c1: '#ffc58f', c2: '#ff8a3d', sh: 'rgba(255,138,61,.4)' },
   memory:  { name: 'Memory',   ic: '🧠', c1: '#7fd6ff', c2: '#2f9bff', sh: 'rgba(47,155,255,.4)' },
   stickers:{ name: 'Stickers', ic: '🎁', c1: '#ffe07a', c2: '#ffb21e', sh: 'rgba(255,178,30,.45)' },
@@ -516,6 +533,67 @@ function genSight(L) {
     choices: uniq(w, () => L > 1 && near.length && rnd(2) ? pick(near) : pick(pool), L === 1 ? 3 : 4), answer: w };
 }
 
+/* ---------- READING ---------- */
+// level 1: read a word, pop its picture (pictures that could be read two ways are left out)
+const RWORDS = [...SP[0], ...SP[1]].filter(([w]) => !['net', 'cup', 'map'].includes(w));
+// level 2: [picture, true sentence, two silly ones]
+const RTRUE = [
+  ['🐟', 'A fish can swim.', 'A fish can fly.', 'A fish can read.'], ['🐦', 'A bird can fly.', 'A bird can drive.', 'A bird can bark.'],
+  ['🍎', 'The apple is red.', 'The apple is blue.', 'The apple can run.'], ['🌙', 'The moon is in the sky.', 'The moon is in a box.', 'The moon is in my cup.'],
+  ['🐶', 'The dog can bark.', 'The dog can moo.', 'The dog can fly.'], ['☀️', 'The sun is hot.', 'The sun is cold.', 'The sun is green.'],
+  ['🐘', 'The elephant is big.', 'The elephant is tiny.', 'The elephant can fly.'], ['❄️', 'Snow is cold.', 'Snow is hot.', 'Snow is pink.'],
+  ['🍌', 'The banana is yellow.', 'The banana is purple.', 'The banana can sing.'], ['🐄', 'A cow says moo.', 'A cow says quack.', 'A cow says meow.'],
+  ['🦆', 'A duck says quack.', 'A duck says moo.', 'A duck says woof.'], ['🚗', 'The car has wheels.', 'The car has wings.', 'The car has legs.'],
+  ['🐢', 'The turtle is slow.', 'The turtle is fast.', 'The turtle can fly.'], ['🌳', 'The tree is tall.', 'The tree can walk.', 'The tree is blue.'],
+  ['🐸', 'The frog is green.', 'The frog is pink.', 'The frog can read.'], ['🛏️', 'I sleep in a bed.', 'I swim in a bed.', 'I cook in a bed.'],
+  ['🐱', 'A cat says meow.', 'A cat says moo.', 'A cat says quack.'], ['🍦', 'Ice cream is cold.', 'Ice cream is hot.', 'Ice cream is a car.'],
+];
+// level 3: short stories, each with questions [question, answer, wrong, wrong]
+const STORIES = [
+  ['Mia has a red kite. She takes it to the park. The wind makes the kite go up high.', [['What color is the kite?', 'red', 'blue', 'green'], ['Where does Mia go?', 'to the park', 'to school', 'to the zoo']]],
+  ['Ben has a little dog named Spot. Spot likes to dig. Today Spot dug a big hole.', [["What is the dog's name?", 'Spot', 'Ben', 'Max'], ['What does Spot like to do?', 'dig', 'swim', 'sing']]],
+  ['It is raining. Lily puts on her boots and her coat. She jumps in the puddles.', [['What does Lily jump in?', 'puddles', 'boxes', 'beds'], ['What does Lily put on?', 'boots and a coat', 'a swimsuit', 'pajamas']]],
+  ['Sam and Dad bake a cake. They put in eggs and milk. The cake is yummy!', [['Who bakes with Sam?', 'Dad', 'Mom', 'Grandma'], ['What do they bake?', 'a cake', 'bread', 'a pizza']]],
+  ['The cat sat on the mat. A bug flew by. The cat jumped up to catch it.', [['What flew by?', 'a bug', 'a bird', 'a ball'], ['Where did the cat sit?', 'on the mat', 'on the bed', 'in a box']]],
+  ['Rielle went to the beach. She made a sand castle. Then she swam in the sea.', [['What did Rielle make?', 'a sand castle', 'a cake', 'a kite'], ['Where did she swim?', 'in the sea', 'in a pool', 'in the bath']]],
+  ['Max is a big brown bear. He likes to eat honey. At night he sleeps in a cave.', [['What does Max like to eat?', 'honey', 'pizza', 'carrots'], ['Where does Max sleep?', 'in a cave', 'in a bed', 'in a tree']]],
+  ['Tom planted a seed. He gave it water every day. Soon a flower grew!', [['What did Tom plant?', 'a seed', 'a rock', 'a shoe'], ['What grew?', 'a flower', 'a cake', 'a hat']]],
+  ['The bus is yellow. It takes the children to school. The driver is Mr. Lee.', [['What color is the bus?', 'yellow', 'red', 'blue'], ['Who drives the bus?', 'Mr. Lee', 'Mom', 'the children']]],
+  ['Zoe lost her shoe. She looked under the bed. The shoe was in the toy box!', [['What did Zoe lose?', 'her shoe', 'her hat', 'her cat'], ['Where was the shoe?', 'in the toy box', 'under the bed', 'in the car']]],
+];
+function genReading(L) {
+  const type = L === 1 ? 'word' : L === 2 ? pick(['true', 'true', 'word']) : pick(['story', 'story', 'true']);
+  if (type === 'word') {
+    const [w, e] = pick(RWORDS);
+    return { text: `<span class="readword">${w}</span>`, say: 'Read the word. Then pop the picture that matches!', choices: uniq(e, () => pick(RWORDS)[1], 3), answer: e, emo: true };
+  }
+  if (type === 'true') {
+    const [e, t, ...f] = pick(RTRUE);
+    return { visual: `<div class="big">${e}</div>`, text: 'Which sentence is true?', small: true, say: 'Look at the picture. Read the sentences. Which one is true?', choices: shuffle([t, ...f]), answer: t };
+  }
+  const [story, qs] = pick(STORIES), [q, a, ...f] = pick(qs);
+  return { visual: `<p class="story">${story}</p>`, text: q, small: true, say: `Read the story. Then answer. ${q}`, choices: shuffle([a, ...f]), answer: a };
+}
+
+/* ---------- DICTATION ---------- */
+// Bubbo says a word (or a sentence at level 3) and she builds it from tiles.
+// Build questions return { build: true, units, pool } instead of choices: units are the answer
+// letters or words in order, pool is the shuffled tiles (units plus a few extra letters).
+function buildQ(units, extras, words = false) {
+  let pool; let g = 0;
+  do { pool = shuffle([...units, ...extras]); } while (pool.join() === [...units, ...extras].join() && units.length > 1 && g++ < 10);
+  return { build: true, words, units, pool, choices: [], answer: units.join(words ? ' ' : '') };
+}
+function extraLetters(w, n) { const out = []; let g = 0; while (out.length < n && g++ < 100) { const c = pick('abcdefghijklmnoprstuw'.split('')); if (!w.includes(c) && !out.includes(c)) out.push(c); } return out; }
+function genDictation(L) {
+  if (L === 3 && rnd(2)) {
+    const s = pick(SENT);
+    return { ...buildQ(s.split(' '), [], true), visual: '<div class="big">👂</div>', text: 'Listen, then build the sentence! 🔊', small: true, say: `Build the sentence. ${s}` };
+  }
+  const [w, e] = L === 1 ? pick(SP[0].filter(([x]) => !['net', 'cup', 'map'].includes(x))) : L === 2 ? pick([...SP[1], ...SIGHT[0].filter(x => x.length >= 3).map(x => [x])]) : pick(SP[2]);
+  return { ...buildQ([...w], extraLetters(w, L === 1 ? 1 : 2)), visual: `<div class="big">${L === 1 ? e : '👂'}</div>`, text: 'Listen, then spell the word! 🔊', small: true, say: `Spell ${w}. ${w}.` };
+}
+
 /* ---------- PATTERNS ---------- */
 const PE = [['🔴', '🔵', '🟡', '🟢'], ['🍎', '🍌', '🍇', '🍓'], ['🐶', '🐱', '🐰', '🐻'], ['⭐', '🌙', '☀️', '🌈'], ['🟥', '🟦', '🟨', '🟩'], ['🦋', '🐞', '🐝', '🐌']];
 function genPattern(L) {
@@ -535,7 +613,7 @@ function genPattern(L) {
   return { visual: `<div class="seq">${seq.join('')}<span class="q">?</span></div>`, text: 'What comes next?', small: true, say: 'Look at the pattern. What comes next?',
     choices: uniq(ans, () => pick(set), 3), answer: ans, emo: true };
 }
-const GEN = { math: genMath, words: genWords, spell: genSpell, sight: genSight, pattern: genPattern };
+const GEN = { math: genMath, words: genWords, spell: genSpell, sight: genSight, reading: genReading, dictation: genDictation, pattern: genPattern };
 
 /* ---------- screens ---------- */
 const app = $('#app');
@@ -589,12 +667,14 @@ function startQuiz(subj, topic) {
 }
 function next() {
   if (Q.idx >= Q.total) return finishQuiz();
-  Q.cur = GEN[Q.subj](P.levels[Q.subj], Q.only); Q.first = true; Q.lock = false;
+  Q.cur = GEN[Q.subj](P.levels[Q.subj], Q.only); Q.first = true; Q.lock = false; Q.slots = Q.cur.build ? Q.cur.units.map(() => null) : null;
   renderQuiz(); speakQ();
 }
 function speakQ() { if (Q && Q.cur) speak(Q.cur.say); }
-function renderQuiz(msg = "Let's go! Pop the right bubble.") {
+function renderQuiz(msg) {
   const s = SUBJ[Q.subj], c = Q.cur, tp = topicOf(Q.subj, Q.topic);
+  msg = msg || (c.build ? 'Tap the tiles in the right order!' : "Let's go! Pop the right bubble.");
+  const words = c.build && c.words;
   const dots = Array.from({ length: Q.total }, (_, i) => `<div class="dot ${Q.results[i] === 1 ? 'on' : Q.results[i] === 0 ? 'ok' : ''} ${i === Q.idx ? 'cur' : ''}"></div>`).join('');
   const wide = c.choices.some(x => x.length > 6);
   app.innerHTML = `
@@ -605,8 +685,10 @@ function renderQuiz(msg = "Let's go! Pop the right bubble.") {
     <div class="stage">
       <div class="helper"><div id="mascot">${bubbo()}</div><div class="say" id="msg">${msg}</div></div>
       <div class="qcard ${c.blocks && Q.blocks ? 'showblocks' : ''}"><button class="speak" data-act="say" aria-label="Read aloud">🔊</button>${c.blocks ? '<button class="blocksbtn" data-act="blocks" aria-label="Counting blocks">🧱</button>' : ''}
-        <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div>${c.blocks ? blocksHtml(c.blocks) : ''}</div>
-      <div class="choices ${wide ? 'wide' : ''} ${c.emo ? 'emo' : ''}">${c.choices.map((x, i) => `<button class="ch" data-i="${i}">${x}</button>`).join('')}</div>
+        <div class="visual">${c.visual || ''}</div><div class="qtext ${c.small ? 'small' : ''}">${c.text}</div>${c.blocks ? blocksHtml(c.blocks) : ''}
+        ${c.build ? `<div class="slots ${words ? 'words' : ''}">${c.units.map((_, i) => `<button class="slot" data-slot="${i}" aria-label="space ${i + 1}"></button>`).join('')}</div>` : ''}</div>
+      ${c.build ? `<div class="bank ${words ? 'words' : ''}">${c.pool.map((x, i) => `<button class="ch" data-tile="${i}">${x}</button>`).join('')}</div>`
+        : `<div class="choices ${wide ? 'wide' : ''} ${c.emo ? 'emo' : ''}">${c.choices.map((x, i) => `<button class="ch" data-i="${i}">${x}</button>`).join('')}</div>`}
     </div>`;
 }
 function setMsg(t, oops) {
@@ -615,25 +697,51 @@ function setMsg(t, oops) {
 }
 function choose(btn) {
   if (Q.lock) return;
-  const val = Q.cur.choices[+btn.dataset.i];
-  const r = btn.getBoundingClientRect();
-  if (val === Q.cur.answer) {
-    Q.lock = true; sfx('right'); burst(r.left + r.width / 2, r.top + r.height / 2, 20);
+  if (Q.cur.choices[+btn.dataset.i] === Q.cur.answer) {
     btn.classList.add('popped'); document.querySelectorAll('.ch').forEach(b => { if (b !== btn) b.classList.add('fade'); });
-    Q.results[Q.idx] = Q.first ? 1 : 0;
-    if (Q.first) {
-      P.stars++; Q.earned++; Q.streak++; Q.miss = 0;
-      const sc = $('#sc'); if (sc) sc.textContent = P.stars;
-      if (Q.streak >= 4 && P.levels[Q.subj] < 3) { P.levels[Q.subj]++; Q.streak = 0; later(() => { toast('🚀 Level up! Level ' + P.levels[Q.subj]); sfx('win'); }, 400); }
-    }
-    save();
-    const p = pick(PRAISE); setMsg(p); speak(p);
-    Q.idx++; later(next, 1500);
-  } else {
-    sfx('wrong'); btn.classList.add('nope'); Q.first = false; Q.streak = 0; Q.miss++;
-    if (Q.miss >= 3 && P.levels[Q.subj] > 1) { P.levels[Q.subj]--; Q.miss = 0; save(); }
-    const o = pick(OOPS); setMsg(o, true); speak(o);
+    gotIt(btn);
+  } else { btn.classList.add('nope'); missed(); }
+}
+// dictation tiles: a tile fills the first empty space; tapping a filled space sends its tile back
+function tapTile(t) {
+  const j = +t.dataset.tile, i = Q.slots.indexOf(null);
+  if (Q.lock || i < 0 || Q.slots.includes(j)) return;
+  Q.slots[i] = j; sfx('tap'); drawSlots();
+  if (!Q.slots.includes(null)) checkBuild();
+}
+function tapSlot(t) {
+  const i = +t.dataset.slot;
+  if (Q.lock || Q.slots[i] === null) return;
+  Q.slots[i] = null; sfx('flip'); drawSlots();
+}
+function drawSlots() {
+  document.querySelectorAll('.slot').forEach((el, i) => { const j = Q.slots[i]; el.textContent = j === null ? '' : Q.cur.pool[j]; el.classList.toggle('full', j !== null); el.classList.remove('bad'); });
+  document.querySelectorAll('.bank .ch').forEach((el, j) => el.classList.toggle('used', Q.slots.includes(j)));
+}
+function checkBuild() {
+  const c = Q.cur, bad = Q.slots.map((j, i) => c.pool[j] === c.units[i] ? -1 : i).filter(i => i >= 0), slots = document.querySelectorAll('.slot');
+  if (!bad.length) { slots.forEach(el => el.classList.add('ok')); return gotIt($('.slots')); }
+  Q.lock = true; bad.forEach(i => slots[i].classList.add('bad')); missed();
+  // keep the right ones, send the wrong tiles back to try again
+  later(() => { bad.forEach(i => Q.slots[i] = null); Q.lock = false; drawSlots(); }, 1000);
+}
+function gotIt(el) {
+  const r = el.getBoundingClientRect();
+  Q.lock = true; sfx('right'); burst(r.left + r.width / 2, r.top + r.height / 2, 20);
+  Q.results[Q.idx] = Q.first ? 1 : 0;
+  if (Q.first) {
+    P.stars++; Q.earned++; Q.streak++; Q.miss = 0;
+    const sc = $('#sc'); if (sc) sc.textContent = P.stars;
+    if (Q.streak >= 4 && P.levels[Q.subj] < 3) { P.levels[Q.subj]++; Q.streak = 0; later(() => { toast('🚀 Level up! Level ' + P.levels[Q.subj]); sfx('win'); }, 400); }
   }
+  save();
+  const p = pick(PRAISE); setMsg(p); speak(p);
+  Q.idx++; later(next, 1500);
+}
+function missed() {
+  sfx('wrong'); Q.first = false; Q.streak = 0; Q.miss++;
+  if (Q.miss >= 3 && P.levels[Q.subj] > 1) { P.levels[Q.subj]--; Q.miss = 0; save(); }
+  const o = pick(OOPS); setMsg(o, true); speak(o);
 }
 function finishQuiz() {
   const good = Q.results.filter(x => x === 1).length;
@@ -745,6 +853,8 @@ function settings() {
     <div class="row">📖 Grammar level ${seg('words')}</div>
     <div class="row">🔤 Spelling level ${seg('spell')}</div>
     <div class="row">👀 Sight words level ${seg('sight')}</div>
+    <div class="row">📚 Reading level ${seg('reading')}</div>
+    <div class="row">✍️ Dictation level ${seg('dictation')}</div>
     <div class="row">🧩 Patterns level ${seg('pattern')}</div>
     <p class="small-note">Levels move up by themselves after 4 first-try answers in a row, and ease down after a few misses. Progress is saved in this browser only.</p>
     <div class="btnrow"><button class="btn pink" data-act="reset">Reset stars</button><button class="btn" data-act="close">Done</button></div>
@@ -755,13 +865,15 @@ function closeSettings() { const m = $('#modal'); if (m) m.remove(); }
 
 /* ---------- events ---------- */
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk],[data-topic],[data-blk]');
+  const t = e.target.closest('[data-act],[data-go],[data-i],[data-mem],[data-card],[data-lvl],[data-tog],[data-stk],[data-topic],[data-blk],[data-tile],[data-slot]');
   if (!t) { if (e.target.id === 'modal') closeSettings(); return; }
   ac();
   const d = t.dataset;
   if (d.card !== undefined) return flipCard(t);
   if (d.i !== undefined && Q && t.closest('.choices')) return choose(t);
   if (d.blk !== undefined) { t.classList.toggle('tick'); return sfx('flip'); }
+  if (d.tile !== undefined && Q) return tapTile(t);
+  if (d.slot !== undefined && Q) return tapSlot(t);
   sfx('tap');
   if (d.go) {
     if (d.go === 'memory') return memoryPick();
@@ -785,7 +897,7 @@ document.addEventListener('click', e => {
     case 'close': closeSettings(); if (!Q && !M) home(); return;
     case 'reset':
       if (!resetArmed) { resetArmed = true; t.textContent = 'Tap again to confirm'; return; }
-      P.stars = 0; P.levels = { math: 1, words: 1, spell: 1, sight: 1, pattern: 1 }; save(); closeSettings(); Q = null; M = null; home(); return;
+      P.stars = 0; P.levels = { math: 1, words: 1, spell: 1, sight: 1, reading: 1, dictation: 1, pattern: 1 }; save(); closeSettings(); Q = null; M = null; home(); return;
   }
 });
 

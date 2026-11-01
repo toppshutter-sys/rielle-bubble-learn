@@ -1,6 +1,6 @@
 # Rielle's Bubble Learn 🫧
 
-A bubbly learning app for Rielle: math, grammar, spelling, sight words, patterns, memory match and a sticker book.
+A bubbly learning app for Rielle: math, grammar, spelling, sight words, reading, dictation, patterns, memory match and a sticker book.
 
 ## Run it
 - Double-click `index.html` to open it in your browser, or

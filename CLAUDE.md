@@ -1,6 +1,6 @@
 # Rielle's Bubble Learn
 
-An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, sight words, patterns, a memory-match game and a sticker book. Bubble theme, read-aloud questions, sounds and rewards.
+An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, sight words, reading, dictation, patterns, a memory-match game and a sticker book. Bubble theme, read-aloud questions, sounds and rewards.
 
 ## Structure
 - Everything lives in `index.html`: HTML, CSS and JavaScript in one file. There is no build step and there are no dependencies, except the Google Font "Fredoka".
@@ -12,7 +12,8 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 - `P`: saved progress (stars, per-subject levels, sound and voice toggles), stored in localStorage under `rielle-bubble-learn`.
 - `sfx()` / `tone()`: sound effects, made with the Web Audio API (no audio files).
 - `speak()`: reads text aloud with the browser's built-in speech synthesis.
-- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genSight` (uses the `SIGHT` word lists and the `SFILL` sentences), `genPattern`. Each one takes a level (1–3), and Math and Grammar also take an optional list of question types to stick to. Each returns `{ text, say, visual?, choices[], answer, small?, emo?, blocks? }`. `blocks` (`{ a, b, mode: 'add' | 'sub' | 'missing' }`) adds the 🧱 counting-blocks button to a math question. `answer` must be one of `choices`, and choices must be unique strings.
+- Question generators: `genMath`, `genWords` (uses the `G` object of grammar question types), `genSpell`, `genSight` (uses the `SIGHT` word lists and the `SFILL` sentences), `genReading` (`RWORDS`, `RTRUE` sentences, `STORIES`), `genDictation`, `genPattern`. Each one takes a level (1–3), and Math and Grammar also take an optional list of question types to stick to. Each returns `{ text, say, visual?, choices[], answer, small?, emo?, blocks? }`. `blocks` (`{ a, b, mode: 'add' | 'sub' | 'missing' }`) adds the 🧱 counting-blocks button to a math question. `answer` must be one of `choices`, and choices must be unique strings. Dictation questions are different: they return `{ build: true, words?, units, pool, answer }`, where `units` are the answer letters (or words) in order and `pool` is the shuffled tiles she taps. `checkBuild()` scores them.
+- Scoring: `gotIt()` and `missed()` handle stars, levels and praise for both bubble answers (`choose()`) and dictation tiles.
 - `GEN` maps each subject key to its generator.
 - `TOPICS` lists the practice topics for Math and Grammar. Tapping either subject opens `topicPick()`; each topic's `t` is the list of question types it uses (the `T` names inside `genMath` / the `G` keys for grammar), plus a "Mix it up" choice.
 - Screens: `home()`, `topicPick()`, `startQuiz(subj, topic?)` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
