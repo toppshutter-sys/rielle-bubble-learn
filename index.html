@@ -190,6 +190,8 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .btn:active{transform:translateY(5px);box-shadow:0 1px 0 #5a3ad6}
 .newsticker{background:#fff;border-radius:28px;padding:14px 24px;font-size:22px;font-weight:600;box-shadow:0 10px 30px rgba(155,123,255,.2);animation:popIn .6s .5s both}
 .newsticker b{font-size:52px;display:block}
+.reward{display:block;margin-top:10px;padding-top:10px;border-top:2px dashed #eee6ff;font-size:.9em;color:var(--ink2)}
+.reward em{font-style:normal;font-size:1.3em}
 
 /* stickers */
 .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:620px;margin:22px auto 0}
@@ -335,6 +337,7 @@ const SUBJ = {
 };
 const STICKERS = ['🦄', '🐬', '🌈', '🦋', '🐼', '🍦', '🚀', '🐙', '🌻', '🦁', '🧁', '👑', '🐳', '🍉', '🪐', '🦩'];
 const PER_STICKER = 10;
+const REWARD_PEOPLE = ['Roshelle', 'Rosabelle', 'Mommy', 'Daddy'];
 
 /* ---------- topics: practice one kind of question at a time ---------- */
 const TOPICS = {
@@ -643,18 +646,19 @@ function showDone(rating, line, earned, again) {
   const title = rating === 3 ? 'Amazing, Rielle!' : rating === 2 ? 'Great work, Rielle!' : 'Good try, Rielle!';
   const had = Math.floor(beforeStars / PER_STICKER), now = Math.floor(P.stars / PER_STICKER);
   const newSticker = now > had && had < STICKERS.length ? STICKERS[Math.min(now, STICKERS.length) - 1] : null;
+  const who = pick(REWARD_PEOPLE);
   app.innerHTML = `${header()}
     <div class="done">
       <div style="width:120px">${bubbo()}</div>
       <h2>${title}</h2>
       <div class="bigstars">${[1, 2, 3].map(i => `<span class="${i <= rating ? '' : 'off'}" style="animation-delay:${i * .25}s">⭐</span>`).join('')}</div>
       <p>${line}<br>+${earned} stars for your collection</p>
-      ${newSticker ? `<div class="newsticker"><b>${newSticker}</b>You unlocked a new sticker!</div>` : ''}
+      ${newSticker ? `<div class="newsticker"><b>${newSticker}</b>You unlocked a new sticker!<span class="reward">🎁 Go ask ${who} for a reward!<br><em>🍪 🤗 ✋</em><br>A treat, a hug or a high five!</span></div>` : ''}
       <div class="btnrow"><button class="btn pink" data-act="again">Play again</button><button class="btn" data-act="home">Home</button></div>
     </div>`;
   doneAgain = again;
   sfx('win'); confetti();
-  speak(`${title} ${line}` + (newSticker ? ' And you unlocked a new sticker!' : ''));
+  speak(`${title} ${line}` + (newSticker ? ` And you unlocked a new sticker! Go ask ${who} for a reward, like a treat, a hug, or a high five!` : ''));
 }
 let doneAgain = null;
 
