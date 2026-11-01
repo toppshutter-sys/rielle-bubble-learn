@@ -17,7 +17,7 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 - `GEN` maps each subject key to its generator.
 - Math is pitched for ages 6–7: level 1 = starting age 6 (numbers to 10–20, with pictures), level 2 = first grade (within 20, numbers to 100, tens and ones, clocks to the half hour, story problems), level 3 = second grade (two-digit adding and taking away, numbers to 1000, clocks to 5 minutes, groups, even and odd). Each kind of math question is a function in the `MATH` object; `genMath` picks one from the level's list.
 - `TOPICS` lists the practice topics for Math and Grammar. Tapping either subject opens `topicPick()`; each topic's `t` is the list of question types it uses (the `T` names inside `genMath` / the `G` keys for grammar), plus a "Mix it up" choice.
-- Screens: `home()`, `topicPick()`, `startQuiz(subj, topic?)` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
+- Screens: `splash()` (shown once when the app opens; its taps go through `splashTap()`), `home()`, `topicPick()`, `startQuiz(subj, topic?)` / `renderQuiz()` / `choose()` / `finishQuiz()`, `memoryPick()` / `startMemory()`, `stickers()`, `settings()`, `showDone()`.
 - All clicks go through one delegated `document` click handler that reads `data-*` attributes.
 
 ## Adding a subject

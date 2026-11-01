@@ -226,6 +226,24 @@ button{font-family:inherit;color:inherit;cursor:pointer}
 .meter{max-width:420px;margin:16px auto 0;height:22px;background:#fff;border-radius:999px;overflow:hidden;box-shadow:inset 0 2px 6px rgba(0,0,0,.08)}
 .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--yellow),var(--orange));border-radius:999px;transition:width .6s}
 
+/* splash screen */
+.splash{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;
+  background:linear-gradient(160deg,#d9ccff 0%,#c9ecff 48%,#ffd3ea 100%);transition:opacity .5s,transform .5s}
+.splash.out{opacity:0;transform:scale(1.08);pointer-events:none}
+.splash-in{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:16px 16px 70px;pointer-events:none}
+.splash-bubbo,.splash-go{pointer-events:auto}
+.splash-bubbo{width:clamp(150px,36vw,230px);cursor:pointer;animation:bob 3s ease-in-out infinite;filter:drop-shadow(0 14px 24px rgba(155,123,255,.4))}
+.splash-bubbo.jump{animation:jump .7s}
+@keyframes jump{30%{transform:translateY(-46px) scale(1.08)}60%{transform:translateY(0) scale(1.08,.92)}80%{transform:scale(.97,1.03)}}
+.splash h1{font-size:clamp(36px,8.4vw,66px);line-height:1.05}
+.splash h1 em{font-style:normal;background:linear-gradient(90deg,var(--purple),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.splash-hint{font-size:clamp(18px,3.4vw,24px);font-weight:500;color:var(--ink2)}
+.splash-go{font-size:clamp(24px,4.6vw,32px);padding:18px 40px;margin-top:6px;animation:pulse 1.6s ease-in-out infinite}
+.splash-credit{position:absolute;bottom:16px;left:16px;right:16px;z-index:2;text-align:center;font-size:clamp(13px,2.6vw,16px);font-weight:500;color:var(--ink2)}
+.sbub{position:absolute;bottom:-140px;z-index:1;border:none;padding:0;border-radius:50%;cursor:pointer;animation:rise linear infinite;
+  background:radial-gradient(circle at 30% 28%,rgba(255,255,255,.95) 0 8%,rgba(255,255,255,.3) 22%,rgba(180,160,255,.2) 60%,rgba(120,200,255,.4) 100%);
+  box-shadow:inset -6px -10px 20px rgba(155,123,255,.25),0 0 0 2px rgba(255,255,255,.7)}
+
 /* modal */
 .modal{position:fixed;inset:0;background:rgba(58,42,107,.35);backdrop-filter:blur(4px);z-index:40;display:grid;place-items:center;padding:16px}
 .panel{background:#fff;border-radius:30px;padding:24px;width:100%;max-width:440px;box-shadow:0 20px 50px rgba(58,42,107,.3);animation:cardIn .35s}
@@ -1026,6 +1044,7 @@ function settings() {
     <div class="row">🖍️ Writing level ${seg('writing')}</div>
     <div class="row">🧩 Patterns level ${seg('pattern')}</div>
     <p class="small-note">Levels move up by themselves after 4 first-try answers in a row, and ease down after a few misses. Progress is saved in this browser only.</p>
+    <p class="small-note">This app was created by Rosario Stanley for Rielle Stanley.</p>
     <div class="btnrow"><button class="btn pink" data-act="reset">Reset stars</button><button class="btn" data-act="close">Done</button></div>
   </div>`;
   document.body.appendChild(d);
@@ -1038,6 +1057,7 @@ document.addEventListener('click', e => {
   if (!t) { if (e.target.id === 'modal') closeSettings(); return; }
   ac();
   const d = t.dataset;
+  if (d.act && d.act.startsWith('splash')) return splashTap(d.act, t);
   if (d.card !== undefined) return flipCard(t);
   if (d.i !== undefined && Q && t.closest('.choices')) return choose(t);
   if (d.blk !== undefined) { t.classList.toggle('tick'); return sfx('flip'); }
@@ -1072,7 +1092,42 @@ document.addEventListener('click', e => {
   }
 });
 
+/* splash screen: Bubbo, bubbles to pop and a start button; the first tap also switches on sound and speech */
+function splash() {
+  const d = document.createElement('div'); d.className = 'splash'; d.id = 'splash';
+  d.innerHTML = `<div class="splash-in">
+      <div class="splash-bubbo" data-act="splash-bubbo">${bubbo()}</div>
+      <h1>Rielle's <em>Bubble Learn</em></h1>
+      <p class="splash-hint">Pop the bubbles, or tap Bubbo!</p>
+      <button class="btn pink splash-go" data-act="splash-go">Let's play! ▶</button>
+    </div>
+    <p class="splash-credit">This app was created by Rosario Stanley for Rielle Stanley 💜</p>`;
+  document.body.appendChild(d);
+  for (let i = 0; i < 9; i++) d.appendChild(splashBubble());
+}
+function splashBubble() {
+  const b = document.createElement('button'), s = 56 + Math.random() * 60;
+  b.className = 'sbub'; b.dataset.act = 'splash-pop'; b.setAttribute('aria-label', 'bubble');
+  b.style.width = b.style.height = s + 'px'; b.style.left = 3 + Math.random() * 85 + '%';
+  b.style.animationDuration = 9 + Math.random() * 8 + 's'; b.style.animationDelay = -Math.random() * 12 + 's';
+  return b;
+}
+function splashTap(act, t) {
+  const sp = $('#splash'); if (!sp) return;
+  if (act === 'splash-pop') {
+    const r = t.getBoundingClientRect(); sfx('pop'); burst(r.left + r.width / 2, r.top + r.height / 2, 10);
+    t.remove(); setTimeout(() => sp.isConnected && sp.appendChild(splashBubble()), 700);
+  } else if (act === 'splash-bubbo') {
+    t.classList.remove('jump'); void t.offsetWidth; t.classList.add('jump'); sfx('right');
+    speak(`Hi Rielle! I'm Bubbo. Let's learn together!`);
+  } else {
+    sfx('win'); sp.classList.add('out'); setTimeout(() => sp.remove(), 550);
+    speak(`${greeting()}, Rielle! Pop a bubble to start learning.`);
+  }
+}
+
 home();
+splash();
 
 /* installable app: offline cache (only over http(s), not inside the Capacitor app) */
 if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.Capacitor) navigator.serviceWorker.register('sw.js').catch(() => {});
