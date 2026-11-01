@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a98bff"/>
+      <stop offset="1" stop-color="#ff86bf"/>
+    </linearGradient>
+    <radialGradient id="skin" cx="45%" cy="38%" r="70%">
+      <stop offset="0" stop-color="#9a5b37"/>
+      <stop offset="1" stop-color="#6e3d22"/>
+    </radialGradient>
+    <radialGradient id="hair" cx="40%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#4a3024"/>
+      <stop offset="1" stop-color="#1f130d"/>
+    </radialGradient>
+    <radialGradient id="bub" cx="32%" cy="28%" r="75%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".95"/>
+      <stop offset=".3" stop-color="#fff" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#d9f0ff" stop-opacity=".45"/>
+    </radialGradient>
+    <radialGradient id="bead" cx="35%" cy="30%" r="70%">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset=".35" stop-color="#ffd25e"/>
+      <stop offset="1" stop-color="#ff9f1c"/>
+    </radialGradient>
+  </defs><g transform="translate(256 256) scale(.66) translate(-256 -256)">
+
+  <!-- background -->
+  
+  <circle cx="70" cy="420" r="34" fill="url(#bub)" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+  <circle cx="452" cy="400" r="24" fill="url(#bub)" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+  <circle cx="440" cy="300" r="12" fill="url(#bub)" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+  <circle cx="62" cy="300" r="14" fill="url(#bub)" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>
+
+  <!-- shoulders / shirt -->
+  <path d="M120 512 C130 440 190 420 256 420 C322 420 382 440 392 512 Z" fill="#ffd25e"/>
+  <path d="M215 425 Q256 455 297 425" fill="none" stroke="#ff9f1c" stroke-width="8" stroke-linecap="round"/>
+
+  <!-- afro puffs -->
+  <g fill="url(#hair)">
+    <circle cx="132" cy="138" r="84"/>
+    <circle cx="380" cy="138" r="84"/>
+  </g>
+  <g fill="none" stroke="#5a3a2b" stroke-width="5" stroke-linecap="round" opacity=".7">
+    <path d="M92 110 q10 -14 24 -6"/><path d="M120 80 q12 -10 26 0"/><path d="M80 150 q8 -12 22 -6"/><path d="M150 112 q12 -10 24 2"/><path d="M106 182 q10 -10 22 -2"/>
+    <path d="M362 80 q12 -10 26 0"/><path d="M396 110 q10 -14 24 -6"/><path d="M338 112 q12 -10 24 2"/><path d="M410 150 q8 -12 22 -6"/><path d="M384 182 q10 -10 22 -2"/>
+  </g>
+
+  <!-- neck -->
+  <rect x="226" y="380" width="60" height="50" rx="20" fill="#6e3d22"/>
+
+  <!-- ears -->
+  <circle cx="122" cy="300" r="26" fill="#7d4628"/>
+  <circle cx="390" cy="300" r="26" fill="#7d4628"/>
+  <circle cx="114" cy="324" r="7" fill="#ffd25e"/>
+  <circle cx="398" cy="324" r="7" fill="#ffd25e"/>
+
+  <!-- face -->
+  <ellipse cx="256" cy="290" rx="136" ry="128" fill="url(#skin)"/>
+
+  <!-- hair cap with soft hairline -->
+  <path d="M120 285 C108 185 170 158 256 158 C342 158 404 185 392 285 C382 236 338 206 256 206 C174 206 130 236 120 285 Z" fill="url(#hair)"/>
+
+  <!-- hair ties with beads -->
+  <g>
+    <ellipse cx="186" cy="182" rx="26" ry="14" transform="rotate(-38 186 182)" fill="#ff5f9e"/>
+    <ellipse cx="326" cy="182" rx="26" ry="14" transform="rotate(38 326 182)" fill="#ff5f9e"/>
+    <circle cx="172" cy="196" r="12" fill="url(#bead)"/>
+    <circle cx="340" cy="196" r="12" fill="url(#bead)"/>
+  </g>
+
+  <!-- eyebrows -->
+  <path d="M184 252 Q204 238 224 250" fill="none" stroke="#2a1810" stroke-width="7" stroke-linecap="round"/>
+  <path d="M288 250 Q308 238 328 252" fill="none" stroke="#2a1810" stroke-width="7" stroke-linecap="round"/>
+
+  <!-- eyes -->
+  <ellipse cx="205" cy="290" rx="19" ry="23" fill="#1c0f0a"/>
+  <ellipse cx="307" cy="290" rx="19" ry="23" fill="#1c0f0a"/>
+  <circle cx="212" cy="281" r="7" fill="#fff"/>
+  <circle cx="314" cy="281" r="7" fill="#fff"/>
+  <circle cx="199" cy="298" r="3.5" fill="#fff" opacity=".8"/>
+  <circle cx="301" cy="298" r="3.5" fill="#fff" opacity=".8"/>
+  <!-- lashes -->
+  <path d="M186 276 l-9 -6 M190 270 l-6 -8" stroke="#1c0f0a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M326 276 l9 -6 M322 270 l6 -8" stroke="#1c0f0a" stroke-width="4" stroke-linecap="round"/>
+
+  <!-- cheeks -->
+  <ellipse cx="172" cy="332" rx="22" ry="13" fill="#ff7eb6" opacity=".55"/>
+  <ellipse cx="340" cy="332" rx="22" ry="13" fill="#ff7eb6" opacity=".55"/>
+
+  <!-- nose -->
+  <path d="M244 318 Q256 328 268 318" fill="none" stroke="#4a2614" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- big happy smile -->
+  <path d="M206 344 Q256 410 306 344 Z" fill="#7a1f2b"/>
+  <path d="M212 347 L300 347 Q298 358 292 362 L220 362 Q214 358 212 347 Z" fill="#fff"/>
+  <clipPath id="mouthClip"><path d="M206 344 Q256 410 306 344 Z"/></clipPath>
+  <ellipse cx="256" cy="384" rx="30" ry="16" fill="#ff7d93" clip-path="url(#mouthClip)"/>
+  <path d="M206 344 Q256 410 306 344" fill="none" stroke="#4a1018" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- floating bubble near puff -->
+  <circle cx="452" cy="56" r="22" fill="url(#bub)" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+  <circle cx="58" cy="60" r="16" fill="url(#bub)" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+</g></svg>

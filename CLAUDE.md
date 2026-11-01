@@ -5,6 +5,8 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 ## Structure
 - Everything lives in `index.html`: HTML, CSS and JavaScript in one file. There is no build step and there are no dependencies, except the Google Font "Fredoka".
 - Open `index.html` in a browser to run it, or serve the folder with something like `npx serve .`.
+- Installable web app (PWA): `manifest.webmanifest` and the service worker `sw.js` sit next to `index.html`. The service worker only runs over http(s), so test installing and offline mode with `npx serve .`, not by opening the file. When you change the list of files in `sw.js`, bump its `CACHE` name.
+- Hosting: Render static site, set up in `render.yaml`. Its build copies `index.html`, the manifest, `sw.js` and the web icons into `public/`. Add any new file the page needs to that build command.
 
 ## Code map (inside the `<script>`)
 - `P`: saved progress (stars, per-subject levels, sound and voice toggles), stored in localStorage under `rielle-bubble-learn`.
@@ -20,6 +22,12 @@ An interactive learning app for a 6-year-old (Rielle): math, grammar, spelling, 
 2. Write a `genX(level)` function and register it in `GEN`.
 3. Add its starting level to `P.levels` (in both the defaults and the reset handler).
 4. Add a level row to `settings()`.
+
+## App icon
+- Icon source: `assets/icon.svg`. The web page uses it as its favicon, and `assets/icon-1024.png` as the Apple touch icon.
+- Adaptive icon foreground: `assets/icon-foreground.svg`.
+- Play Store icon: `assets/play-store-512.png`.
+- Ready-made Android launcher icons are in `assets/android/res/`. Once `android/` exists, copy them into `android/app/src/main/res/` (replacing the default `mipmap-*` icons), then run `npx cap sync android`.
 
 ## Android plan
 Chosen approach: **Capacitor** wraps the existing web app first. Flutter is a possible later rewrite.

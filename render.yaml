@@ -3,7 +3,7 @@ services:
     name: rielle-bubble-learn
     runtime: static
     # Publish only the app, not CLAUDE.md / README.md
-    buildCommand: mkdir -p public && cp index.html public/
+    buildCommand: mkdir -p public/assets && cp index.html manifest.webmanifest sw.js public/ && cp assets/*.svg assets/*.png public/assets/
     staticPublishPath: ./public
     headers:
       - path: /*
