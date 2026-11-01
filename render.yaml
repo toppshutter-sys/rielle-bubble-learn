@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: rielle-bubble-learn
+    runtime: static
+    # Publish only the app, not CLAUDE.md / README.md
+    buildCommand: mkdir -p public && cp index.html public/
+    staticPublishPath: ./public
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
